@@ -3,3 +3,9 @@ java = "21"
 
 [tasks.dev]
 run = "./mvnw spring-boot:run"
+
+[tasks.prod]
+run = "./mvnw spring-boot:run -Dspring-boot.run.profiles=prod"
+
+[env]
+_.file = ".env"
