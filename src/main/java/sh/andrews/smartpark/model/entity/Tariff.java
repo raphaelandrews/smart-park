@@ -2,7 +2,15 @@ package sh.andrews.smartpark.model.entity;
 
 import java.math.BigDecimal;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "tariffs")
 public class Tariff {
+
+  @Id
   private Long id;
   private BigDecimal firstHourRate;
   private BigDecimal additionalHourRate;

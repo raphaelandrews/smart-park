@@ -1,13 +1,31 @@
 package sh.andrews.smartpark.model.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import sh.andrews.smartpark.model.enums.ParkingSpaceStatus;
 import sh.andrews.smartpark.model.enums.ParkingSpaceType;
 
+@Entity
+@Table(name = "parking_spaces")
 public class ParkingSpace {
+
+  @Id
   private Long id;
   private String code;
+
+  @Enumerated(EnumType.STRING)
   private ParkingSpaceType parkingSpaceType;
+
+  @Enumerated(EnumType.STRING)
   private ParkingSpaceStatus parkingSpaceStatus;
+
+  @ManyToOne
+  @JoinColumn(name = "sector_id")
   private Sector sector;
 
   public ParkingSpace() {

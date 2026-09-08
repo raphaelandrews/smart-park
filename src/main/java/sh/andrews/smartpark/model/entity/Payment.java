@@ -2,14 +2,24 @@ package sh.andrews.smartpark.model.entity;
 
 import java.math.BigDecimal;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import sh.andrews.smartpark.model.enums.PaymentMethod;
 import sh.andrews.smartpark.model.enums.PaymentStatus;
 
+@Entity
+@Table(name = "payments")
 public class Payment {
+
+  @Id
   private Long id;
   private BigDecimal amount;
   private PaymentMethod paymentMethod;
   private PaymentStatus paymentStatus;
+
+  @OneToOne
   private Ticket ticket;
 
   public Payment() {

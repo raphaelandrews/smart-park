@@ -1,8 +1,15 @@
 package sh.andrews.smartpark.model.entity;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import sh.andrews.smartpark.model.enums.VehicleType;
 
+@Entity
+@Table(name = "vehicles")
 public class Vehicle {
+
+  @Id
   private Long id;
   private String licensePlate;
   private String model;

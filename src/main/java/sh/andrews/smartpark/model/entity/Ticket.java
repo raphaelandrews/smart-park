@@ -3,31 +3,56 @@ package sh.andrews.smartpark.model.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import sh.andrews.smartpark.model.enums.TicketStatus;
 
+@Entity
+@Table(name = "tickets")
 public class Ticket {
+
+  @Id
   private Long id;
   private String code;
   private LocalDateTime entryTime;
   private LocalDateTime exitTime;
-  private TicketStatus ticketStatus;
   private BigDecimal amount;
+
+  @Enumerated(EnumType.STRING)
+  private TicketStatus status;
+
+  @Enumerated(EnumType.STRING)
+  @ManyToOne
+  @JoinColumn(name = "vehicle_id")
   private Vehicle vehicle;
+
+  @Enumerated(EnumType.STRING)
+  @ManyToOne
+  @JoinColumn(name = "parking_space_id")
   private ParkingSpace parkingSpace;
+
+  @Enumerated(EnumType.STRING)
+  @ManyToOne
+  @JoinColumn(name = "tariff_id")
   private Tariff tariff;
 
   public Ticket() {
   }
 
-  public Ticket(Long id, String code, LocalDateTime entryTime, LocalDateTime exitTime, TicketStatus ticketStatus,
-      BigDecimal amount, Vehicle vehicle, ParkingSpace parkingSpace, Tariff tariff) {
+  public Ticket(Long id, String code, LocalDateTime entryTime, LocalDateTime exitTime, BigDecimal amount,
+      TicketStatus status, Vehicle vehicle, ParkingSpace parkingSpace, Tariff tariff) {
     super();
     this.id = id;
     this.code = code;
     this.entryTime = entryTime;
     this.exitTime = exitTime;
-    this.ticketStatus = ticketStatus;
     this.amount = amount;
+    this.status = status;
     this.vehicle = vehicle;
     this.parkingSpace = parkingSpace;
     this.tariff = tariff;
@@ -65,20 +90,20 @@ public class Ticket {
     this.exitTime = exitTime;
   }
 
-  public TicketStatus getTicketStatus() {
-    return ticketStatus;
-  }
-
-  public void setTicketStatus(TicketStatus ticketStatus) {
-    this.ticketStatus = ticketStatus;
-  }
-
   public BigDecimal getAmount() {
     return amount;
   }
 
   public void setAmount(BigDecimal amount) {
     this.amount = amount;
+  }
+
+  public TicketStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(TicketStatus status) {
+    this.status = status;
   }
 
   public Vehicle getVehicle() {
