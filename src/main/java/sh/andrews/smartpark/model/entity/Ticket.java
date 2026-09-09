@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -17,6 +19,7 @@ import sh.andrews.smartpark.model.enums.TicketStatus;
 public class Ticket {
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String code;
   private LocalDateTime entryTime;
@@ -26,17 +29,14 @@ public class Ticket {
   @Enumerated(EnumType.STRING)
   private TicketStatus status;
 
-  @Enumerated(EnumType.STRING)
   @ManyToOne
   @JoinColumn(name = "vehicle_id")
   private Vehicle vehicle;
 
-  @Enumerated(EnumType.STRING)
   @ManyToOne
   @JoinColumn(name = "parking_space_id")
   private ParkingSpace parkingSpace;
 
-  @Enumerated(EnumType.STRING)
   @ManyToOne
   @JoinColumn(name = "tariff_id")
   private Tariff tariff;
