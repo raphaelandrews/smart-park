@@ -1,11 +1,14 @@
 package sh.andrews.smartpark.model.entity;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -18,6 +21,9 @@ public class Tariff {
   private BigDecimal firstHourRate;
   private BigDecimal additionalHourRate;
   private Integer freeMinutes;
+
+  @OneToMany
+  private List<Ticket> tickets = new ArrayList<>();
 
   public Tariff() {
   }

@@ -2,7 +2,6 @@ package sh.andrews.smartpark.controller;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,8 +15,11 @@ import sh.andrews.smartpark.service.VehicleService;
 @RequestMapping(value = "/vehicle")
 public class VehicleController {
 
-  @Autowired
-  private VehicleService service;
+  private final VehicleService service;
+
+  public VehicleController(VehicleService service) {
+    this.service = service;
+  }
 
   @GetMapping
   public ResponseEntity<List<Vehicle>> findAll() {

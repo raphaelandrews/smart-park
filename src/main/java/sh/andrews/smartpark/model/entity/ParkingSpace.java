@@ -1,5 +1,8 @@
 package sh.andrews.smartpark.model.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -8,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import sh.andrews.smartpark.model.enums.ParkingSpaceStatus;
 import sh.andrews.smartpark.model.enums.ParkingSpaceType;
@@ -30,6 +34,9 @@ public class ParkingSpace {
   @ManyToOne
   @JoinColumn(name = "sector_id")
   private Sector sector;
+
+  @OneToMany
+  private List<Ticket> tickets = new ArrayList<>();
 
   public ParkingSpace() {
   }

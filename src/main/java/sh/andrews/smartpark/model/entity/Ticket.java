@@ -3,6 +3,8 @@ package sh.andrews.smartpark.model.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -22,8 +24,13 @@ public class Ticket {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String code;
+
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "GMT")
   private LocalDateTime entryTime;
+
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "GMT")
   private LocalDateTime exitTime;
+
   private BigDecimal amount;
 
   @Enumerated(EnumType.STRING)
