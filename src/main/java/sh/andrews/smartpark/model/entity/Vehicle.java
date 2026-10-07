@@ -1,8 +1,10 @@
 package sh.andrews.smartpark.model.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -10,31 +12,57 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import sh.andrews.smartpark.model.enums.VehicleType;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "vehicles")
 public class Vehicle {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id")
+  @EqualsAndHashCode.Include
   private Long id;
+
+  @Column(name = "licensePlate", length = 10, nullable = false)
   private String licensePlate;
+
+  @Column(name = "model", length = 100, nullable = false)
   private String model;
+
+  @Column(name = "color", length = 50, nullable = false)
   private String color;
 
   @Enumerated(EnumType.STRING)
+  @Column(name = "vehicleType", length = 20, nullable = false)
   private VehicleType vehicleType;
 
-  @OneToMany
+  @Column(name = "active", nullable = false)
+  private Boolean active = true;
+
+  @Column(name = "createdAt", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @Column(name = "updatedAt", nullable = false)
+  private LocalDateTime updatedAt;
+
+  @OneToMany(mappedBy = "vehicle")
   private List<Ticket> tickets = new ArrayList<>();
 
-  public Vehicle() {
-  }
-
   public Vehicle(Long id, String licensePlate, String model, String color, VehicleType vehicleType) {
-    super();
     this.id = id;
     this.licensePlate = licensePlate;
     this.model = model;
@@ -42,69 +70,15 @@ public class Vehicle {
     this.vehicleType = vehicleType;
   }
 
-  public Long getId() {
-    return id;
+  @PrePersist
+  private void uponRegistration() {
+    LocalDateTime now = LocalDateTime.now();
+    createdAt = now;
+    updatedAt = now;
   }
 
-  public void setId(Long id) {
-    this.id = id;
+  @PreUpdate
+  private void uponUpdating() {
+    updatedAt = LocalDateTime.now();
   }
-
-  public String getLicensePlate() {
-    return licensePlate;
-  }
-
-  public void setLicensePlate(String licensePlate) {
-    this.licensePlate = licensePlate;
-  }
-
-  public String getModel() {
-    return model;
-  }
-
-  public void setModel(String model) {
-    this.model = model;
-  }
-
-  public String getColor() {
-    return color;
-  }
-
-  public void setColor(String color) {
-    this.color = color;
-  }
-
-  public VehicleType getVehicleType() {
-    return vehicleType;
-  }
-
-  public void setVehicleType(VehicleType vehicleType) {
-    this.vehicleType = vehicleType;
-  }
-
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((id == null) ? 0 : id.hashCode());
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    Vehicle other = (Vehicle) obj;
-    if (id == null) {
-      if (other.id != null)
-        return false;
-    } else if (!id.equals(other.id))
-      return false;
-    return true;
-  }
-
 }

@@ -1,96 +1,73 @@
 package sh.andrews.smartpark.model.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "tariffs")
 public class Tariff {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id")
+  @EqualsAndHashCode.Include
   private Long id;
-  private BigDecimal firstHourRate;
-  private BigDecimal additionalHourRate;
-  private Integer freeMinutes;
 
-  @OneToMany
+  @Column(name = "description", length = 255, nullable = false)
+  private String description;
+
+  @Column(name = "firstHourRate", precision = 10, scale = 2, nullable = false)
+  private BigDecimal firstHourRate;
+
+  @Column(name = "additionalHourRate", precision = 10, scale = 2, nullable = false)
+  private BigDecimal additionalHourRate;
+
+  @Column(name = "toleranceMinutes", nullable = false)
+  private Short toleranceMinutes;
+
+  @Column(name = "active", nullable = false)
+  private Boolean active = true;
+
+  @Column(name = "createdAt", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @Column(name = "updatedAt", nullable = false)
+  private LocalDateTime updatedAt;
+
+  @OneToMany(mappedBy = "tariff")
   private List<Ticket> tickets = new ArrayList<>();
 
-  public Tariff() {
+  @PrePersist
+  private void uponRegistration() {
+    LocalDateTime now = LocalDateTime.now();
+    createdAt = now;
+    updatedAt = now;
   }
 
-  public Tariff(Long id, BigDecimal firstHourRate, BigDecimal additionalHourRate, Integer freeMinutes) {
-    super();
-    this.id = id;
-    this.firstHourRate = firstHourRate;
-    this.additionalHourRate = additionalHourRate;
-    this.freeMinutes = freeMinutes;
+  @PreUpdate
+  private void uponUpdating() {
+    updatedAt = LocalDateTime.now();
   }
-
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public BigDecimal getFirstHourRate() {
-    return firstHourRate;
-  }
-
-  public void setFirstHourRate(BigDecimal firstHourRate) {
-    this.firstHourRate = firstHourRate;
-  }
-
-  public BigDecimal getAdditionalHourRate() {
-    return additionalHourRate;
-  }
-
-  public void setAdditionalHourRate(BigDecimal additionalHourRate) {
-    this.additionalHourRate = additionalHourRate;
-  }
-
-  public Integer getFreeMinutes() {
-    return freeMinutes;
-  }
-
-  public void setFreeMinutes(Integer freeMinutes) {
-    this.freeMinutes = freeMinutes;
-  }
-
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((id == null) ? 0 : id.hashCode());
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    Tariff other = (Tariff) obj;
-    if (id == null) {
-      if (other.id != null)
-        return false;
-    } else if (!id.equals(other.id))
-      return false;
-    return true;
-  }
-
 }

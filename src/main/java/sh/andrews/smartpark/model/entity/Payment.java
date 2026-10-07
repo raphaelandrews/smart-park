@@ -1,110 +1,67 @@
 package sh.andrews.smartpark.model.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import sh.andrews.smartpark.model.enums.PaymentMethod;
-import sh.andrews.smartpark.model.enums.PaymentStatus;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "payments")
 public class Payment {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "id")
+  @EqualsAndHashCode.Include
   private Long id;
+
+  @Column(name = "paymentDateTime", nullable = false)
+  private LocalDateTime paymentDateTime;
+
+  @Column(name = "amount", precision = 10, scale = 2, nullable = false)
   private BigDecimal amount;
 
-  @Enumerated(EnumType.STRING)
-  private PaymentMethod paymentMethod;
+  @Column(name = "active", nullable = false)
+  private Boolean active = true;
 
-  @Enumerated(EnumType.STRING)
-  private PaymentStatus paymentStatus;
+  @Column(name = "createdAt", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @Column(name = "updatedAt", nullable = false)
+  private LocalDateTime updatedAt;
 
   @OneToOne
+  @JoinColumn(name = "ticket_id", nullable = false, unique = true)
   private Ticket ticket;
 
-  public Payment() {
+  @PrePersist
+  private void uponRegistration() {
+    LocalDateTime now = LocalDateTime.now();
+    createdAt = now;
+    updatedAt = now;
   }
 
-  public Payment(Long id, BigDecimal amount, PaymentMethod paymentMethod, PaymentStatus paymentStatus, Ticket ticket) {
-    super();
-    this.id = id;
-    this.amount = amount;
-    this.paymentMethod = paymentMethod;
-    this.paymentStatus = paymentStatus;
-    this.ticket = ticket;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public BigDecimal getAmount() {
-    return amount;
-  }
-
-  public void setAmount(BigDecimal amount) {
-    this.amount = amount;
-  }
-
-  public PaymentMethod getPaymentMethod() {
-    return paymentMethod;
-  }
-
-  public void setPaymentMethod(PaymentMethod paymentMethod) {
-    this.paymentMethod = paymentMethod;
-  }
-
-  public PaymentStatus getPaymentStatus() {
-    return paymentStatus;
-  }
-
-  public void setPaymentStatus(PaymentStatus paymentStatus) {
-    this.paymentStatus = paymentStatus;
-  }
-
-  public Ticket getTicket() {
-    return ticket;
-  }
-
-  public void setTicket(Ticket ticket) {
-    this.ticket = ticket;
-  }
-
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((id == null) ? 0 : id.hashCode());
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    Payment other = (Payment) obj;
-    if (id == null) {
-      if (other.id != null)
-        return false;
-    } else if (!id.equals(other.id))
-      return false;
-    return true;
+  @PreUpdate
+  private void uponUpdating() {
+    updatedAt = LocalDateTime.now();
   }
 }
