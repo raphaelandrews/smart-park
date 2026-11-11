@@ -1,0 +1,16 @@
+.git
+.gitignore
+.gitattributes
+target/
+data/
+.env
+.env.*
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+*.iml
+HELP.md
+DEPLOY.md

@@ -34,4 +34,23 @@ build/
 
 ### H2 ###
 data/
+
+### Environment ###
 .env
+.env.*
+!.env.example
+
+### Logs / JVM ###
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+### Compiled classes ###
+*.class
+
+### OS ###
+.DS_Store
+Thumbs.db
+.neon
+node_modules/
