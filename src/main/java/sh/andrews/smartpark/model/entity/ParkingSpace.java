@@ -36,7 +36,7 @@ public class ParkingSpace {
   @EqualsAndHashCode.Include
   private Long id;
 
-  @Column(name = "code", length = 20, nullable = false)
+  @Column(name = "code", length = 20, nullable = false, unique = true)
   private String code;
 
   @Column(name = "blocked", nullable = false)

@@ -35,7 +35,7 @@ public class Tariff {
   @EqualsAndHashCode.Include
   private Long id;
 
-  @Column(name = "description", length = 255, nullable = false)
+  @Column(name = "description", length = 255, nullable = false, unique = true)
   private String description;
 
   @Column(name = "firstHourRate", precision = 10, scale = 2, nullable = false)

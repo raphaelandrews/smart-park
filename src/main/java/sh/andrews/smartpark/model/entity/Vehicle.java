@@ -37,7 +37,7 @@ public class Vehicle {
   @EqualsAndHashCode.Include
   private Long id;
 
-  @Column(name = "licensePlate", length = 10, nullable = false)
+  @Column(name = "licensePlate", length = 10, nullable = false, unique = true)
   private String licensePlate;
 
   @Column(name = "model", length = 100, nullable = false)

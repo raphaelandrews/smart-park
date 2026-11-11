@@ -1,10 +1,11 @@
 package sh.andrews.smartpark.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import sh.andrews.smartpark.dto.response.VehicleResponseDTO;
+import sh.andrews.smartpark.exception.ResourceNotFoundException;
 import sh.andrews.smartpark.model.entity.Vehicle;
 import sh.andrews.smartpark.repository.VehicleRepository;
 
@@ -17,12 +18,15 @@ public class VehicleService {
     this.repository = repository;
   }
 
-  public List<Vehicle> findAll() {
-    return repository.findAll();
+  public List<VehicleResponseDTO> findAll() {
+    return repository.findAll().stream()
+        .map(VehicleResponseDTO::fromEntity)
+        .toList();
   }
 
-  public Vehicle findById(Long id) {
-    Optional<Vehicle> obj = repository.findById(id);
-    return obj.get();
+  public VehicleResponseDTO findById(Long id) {
+    Vehicle vehicle = repository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado com id " + id));
+    return VehicleResponseDTO.fromEntity(vehicle);
   }
 }
