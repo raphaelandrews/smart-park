@@ -26,7 +26,7 @@ public class VehicleService {
 
   public VehicleResponseDTO findById(Long id) {
     Vehicle vehicle = repository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado com id " + id));
+        .orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado. ID: " + id));
     return VehicleResponseDTO.fromEntity(vehicle);
   }
 }
