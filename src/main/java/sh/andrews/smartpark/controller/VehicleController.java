@@ -1,7 +1,7 @@
 package sh.andrews.smartpark.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,10 +24,10 @@ public class VehicleController {
     this.service = service;
   }
 
-  @Operation(summary = "List all vehicles")
+  @Operation(summary = "List all active vehicles")
   @GetMapping
-  public ResponseEntity<List<VehicleResponseDTO>> findAll() {
-    return ResponseEntity.ok(service.findAll());
+  public ResponseEntity<Page<VehicleResponseDTO>> findAll(Pageable pageable) {
+    return ResponseEntity.ok(service.findAll(pageable));
   }
 
   @Operation(summary = "Find a vehicle by ID")
