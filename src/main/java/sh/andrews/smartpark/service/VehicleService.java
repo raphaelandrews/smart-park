@@ -62,4 +62,4 @@ public class VehicleService {
         .orElseThrow(() -> new ResourceNotFoundException(
             "Veículo " + id + " não encontrado."));
   }
-}🎵
+}
