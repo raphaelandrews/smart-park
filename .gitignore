@@ -54,3 +54,13 @@ replay_pid*
 Thumbs.db
 .neon
 node_modules/
+
+### Web / Node ###
+dist/
+.wrangler/
+.alchemy/
+.output/
+.vite/
+.turbo/
+coverage/
+*.tsbuildinfo
