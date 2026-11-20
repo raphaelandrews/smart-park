@@ -44,6 +44,23 @@ by hand. All requests go through `src/api/fetcher.ts`, which prefixes `VITE_API_
 In development, Vite proxies `/api` to `http://localhost:8080`; the proxy is configured in
 `apps/web/vite.config.ts`.
 
+## Authentication
+
+- Email/password and Google sign-in both return a JWT access token.
+- The token is kept in memory and mirrored to `sessionStorage` so a page refresh keeps
+  the session; closing the tab ends it.
+- Every API request goes through `src/api/fetcher.ts`, which adds
+  `Authorization: Bearer <token>`.
+- `401` responses clear the session and redirect to `/login`.
+- `ADMIN` lands on `/admin`; `USER` lands on `/my`.
+- Public routes: `/login` and `/register`. Everything under `/admin` requires `ADMIN`.
+
+Set `VITE_GOOGLE_CLIENT_ID` to the Google OAuth Web Client ID to show the Google button.
+Without it, email/password login still works and the Google button is hidden.
+
+For subdomains, use `app.<domain>` for the web app and `api.<domain>` for the API, with
+`VITE_API_URL=https://api.<domain>` and `CORS_ALLOWED_ORIGINS=https://app.<domain>`.
+
 Run the frontend tests with:
 
 ```bash

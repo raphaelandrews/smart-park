@@ -44,8 +44,11 @@ public class AdminSeeder implements CommandLineRunner {
     boolean changed = user.getId() == null;
 
     user.setEmail(email);
-    if (!StringUtils.hasText(user.getName())) {
-      user.setName(StringUtils.hasText(admin.getName()) ? admin.getName() : "Administrador");
+    String configuredName = StringUtils.hasText(admin.getName())
+        ? admin.getName()
+        : "Operador";
+    if (!configuredName.equals(user.getName())) {
+      user.setName(configuredName);
       changed = true;
     }
     if (user.getRole() != UserRole.ADMIN) {

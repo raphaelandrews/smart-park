@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@web/ui/components/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@web/ui/components/avatar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,6 +8,15 @@ import {
   BreadcrumbSeparator,
 } from "@web/ui/components/breadcrumb";
 import { Button } from "@web/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@web/ui/components/dropdown-menu";
 import { Separator } from "@web/ui/components/separator";
 import {
   Sidebar,
@@ -31,13 +40,19 @@ import {
   Car01Icon,
   CreditCardIcon,
   LayoutDashboardIcon,
+  Logout01Icon,
   ReceiptTextIcon,
   SquareParkingIcon,
   TagsIcon,
   Ticket01Icon,
+  UnfoldMoreIcon,
+  User03Icon,
 } from "@hugeicons/core-free-icons";
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
+
+import { useAuth } from "@/auth/auth-context";
+import { getInitials, getRoleLabel } from "@/lib/labels";
 
 const adminNavItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboardIcon },
@@ -66,6 +81,78 @@ function readSidebarOpen() {
   }
   const match = document.cookie.match(/(?:^|;\s*)sidebar_state=(true|false)/);
   return match?.[1] !== "false";
+}
+
+function NavUser() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const name = user?.name ?? "Conta";
+  const email = user?.email ?? "Sem sessão";
+  const initials = getInitials(name, email);
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                size="lg"
+                tooltip="Conta"
+                className="data-open:bg-sidebar-accent"
+              />
+            }
+          >
+            <Avatar>
+              {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={name} /> : null}
+              <AvatarFallback className="bg-primary-100 text-primary-900">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">{name}</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {getRoleLabel(user?.role)}
+              </span>
+            </div>
+            <HugeiconsIcon icon={UnfoldMoreIcon} strokeWidth={2} className="ml-auto size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" side="right" align="end" sideOffset={4}>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <Avatar>
+                    {user?.avatarUrl ? <AvatarImage src={user.avatarUrl} alt={name} /> : null}
+                    <AvatarFallback className="bg-primary-100 text-primary-900">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 leading-tight">
+                    <span className="truncate font-medium">{name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{email}</span>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => void router.navigate({ to: "/my" })}>
+                <HugeiconsIcon icon={User03Icon} strokeWidth={2} className="size-4" />
+                Minha área
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => void logout()}>
+                <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} className="size-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
 }
 
 function AppSidebar() {
@@ -117,19 +204,7 @@ function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex h-12 items-center gap-2 rounded-md p-2 text-left text-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
-              <Avatar>
-                <AvatarFallback className="bg-primary-100 text-primary-900">OP</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium">Operador</span>
-                <span className="truncate text-xs text-muted-foreground">Administrador</span>
-              </div>
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <NavUser />
       </SidebarFooter>
 
       <SidebarRail />

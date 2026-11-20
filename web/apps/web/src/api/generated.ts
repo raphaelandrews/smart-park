@@ -261,6 +261,61 @@ export interface ParkingSpaceTypeRequestDTO {
   requiresCredential: boolean;
 }
 
+export interface RegisterRequestDTO {
+  /**
+     * @minLength 0
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minLength 0
+     * @maxLength 255
+     */
+  email: string;
+  /**
+     * @minLength 8
+     * @maxLength 72
+     */
+  password: string;
+}
+
+export type UserResponseDTORole = typeof UserResponseDTORole[keyof typeof UserResponseDTORole];
+
+
+export const UserResponseDTORole = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+} as const;
+
+export interface UserResponseDTO {
+  id?: number;
+  name?: string;
+  email?: string;
+  role?: UserResponseDTORole;
+  avatarUrl?: string;
+  active?: boolean;
+  createdAt?: string;
+}
+
+export interface AuthResponseDTO {
+  accessToken?: string;
+  tokenType?: string;
+  expiresIn?: number;
+  user?: UserResponseDTO;
+}
+
+export interface LoginRequestDTO {
+  /** @minLength 1 */
+  email: string;
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface GoogleLoginRequestDTO {
+  /** @minLength 1 */
+  idToken: string;
+}
+
 export interface SortObject {
   empty?: boolean;
   sorted?: boolean;
@@ -3171,6 +3226,342 @@ export const useRegisterParkingSpaceType = <TError = unknown,
       return useMutation(getRegisterParkingSpaceTypeMutationOptions(options), queryClient);
     }
 
+export type registerResponse200 = {
+  data: AuthResponseDTO
+  status: 200
+}
+
+export type registerResponseSuccess = (registerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type registerResponse = (registerResponseSuccess)
+
+export const getRegisterUrl = () => {
+
+
+
+
+  return `/auth/register`
+}
+
+/**
+ * @summary Register a new user
+ */
+export const register = async (registerRequestDTO: RegisterRequestDTO, options?: Parameters<typeof customFetch>[1]): Promise<registerResponse> => {
+
+  return customFetch<registerResponse>(getRegisterUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(registerRequestDTO)
+  }
+);}
+
+
+
+
+
+export const getRegisterMutationKey = () => ['register'] as const;
+
+export const getRegisterMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof register>>, TError,RegisterMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof register>>, TError,RegisterMutationVariables, TContext> => {
+
+const mutationKey = getRegisterMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof register>>, RegisterMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  register(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterMutationResult = NonNullable<Awaited<ReturnType<typeof register>>>
+    export type RegisterMutationBody = RegisterRequestDTO
+    export type RegisterMutationError = unknown
+    export type RegisterMutationVariables = {data: RegisterRequestDTO}
+
+    /** @summary Register a new user */
+export const useRegister = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof register>>, TError,RegisterMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof register>>,
+        TError,
+        RegisterMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRegisterMutationOptions(options), queryClient);
+    }
+
+export type logoutResponse200 = {
+  data: void
+  status: 200
+}
+
+export type logoutResponseSuccess = (logoutResponse200) & {
+  headers: Headers;
+};
+;
+
+export type logoutResponse = (logoutResponseSuccess)
+
+export const getLogoutUrl = () => {
+
+
+
+
+  return `/auth/logout`
+}
+
+/**
+ * @summary Logout (the client discards its token)
+ */
+export const logout = async ( options?: Parameters<typeof customFetch>[1]): Promise<logoutResponse> => {
+
+  return customFetch<logoutResponse>(getLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogoutMutationKey = () => ['logout'] as const;
+
+export const getLogoutMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext> => {
+
+const mutationKey = getLogoutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logout>>, void> = () => {
+
+
+          return  logout(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>
+
+    export type LogoutMutationError = unknown
+
+
+    /** @summary Logout (the client discards its token) */
+export const useLogout = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof logout>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogoutMutationOptions(options), queryClient);
+    }
+
+export type loginResponse200 = {
+  data: AuthResponseDTO
+  status: 200
+}
+
+export type loginResponseSuccess = (loginResponse200) & {
+  headers: Headers;
+};
+;
+
+export type loginResponse = (loginResponseSuccess)
+
+export const getLoginUrl = () => {
+
+
+
+
+  return `/auth/login`
+}
+
+/**
+ * @summary Login with email and password
+ */
+export const login = async (loginRequestDTO: LoginRequestDTO, options?: Parameters<typeof customFetch>[1]): Promise<loginResponse> => {
+
+  return customFetch<loginResponse>(getLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(loginRequestDTO)
+  }
+);}
+
+
+
+
+
+export const getLoginMutationKey = () => ['login'] as const;
+
+export const getLoginMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext> => {
+
+const mutationKey = getLoginMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, LoginMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  login(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
+    export type LoginMutationBody = LoginRequestDTO
+    export type LoginMutationError = unknown
+    export type LoginMutationVariables = {data: LoginRequestDTO}
+
+    /** @summary Login with email and password */
+export const useLogin = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,LoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof login>>,
+        TError,
+        LoginMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLoginMutationOptions(options), queryClient);
+    }
+
+export type loginWithGoogleResponse200 = {
+  data: AuthResponseDTO
+  status: 200
+}
+
+export type loginWithGoogleResponseSuccess = (loginWithGoogleResponse200) & {
+  headers: Headers;
+};
+;
+
+export type loginWithGoogleResponse = (loginWithGoogleResponseSuccess)
+
+export const getLoginWithGoogleUrl = () => {
+
+
+
+
+  return `/auth/google`
+}
+
+/**
+ * @summary Login with a Google ID token
+ */
+export const loginWithGoogle = async (googleLoginRequestDTO: GoogleLoginRequestDTO, options?: Parameters<typeof customFetch>[1]): Promise<loginWithGoogleResponse> => {
+
+  return customFetch<loginWithGoogleResponse>(getLoginWithGoogleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
+    body: JSON.stringify(googleLoginRequestDTO)
+  }
+);}
+
+
+
+
+
+export const getLoginWithGoogleMutationKey = () => ['loginWithGoogle'] as const;
+
+export const getLoginWithGoogleMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginWithGoogle>>, TError,LoginWithGoogleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof loginWithGoogle>>, TError,LoginWithGoogleMutationVariables, TContext> => {
+
+const mutationKey = getLoginWithGoogleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof loginWithGoogle>>, LoginWithGoogleMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  loginWithGoogle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginWithGoogleMutationResult = NonNullable<Awaited<ReturnType<typeof loginWithGoogle>>>
+    export type LoginWithGoogleMutationBody = GoogleLoginRequestDTO
+    export type LoginWithGoogleMutationError = unknown
+    export type LoginWithGoogleMutationVariables = {data: GoogleLoginRequestDTO}
+
+    /** @summary Login with a Google ID token */
+export const useLoginWithGoogle = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginWithGoogle>>, TError,LoginWithGoogleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof loginWithGoogle>>,
+        TError,
+        LoginWithGoogleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLoginWithGoogleMutationOptions(options), queryClient);
+    }
+
 export type getPaymentResponse200 = {
   data: PaymentResponseDTO
   status: 200
@@ -3367,3 +3758,110 @@ export const useDeactivatePayment = <TError = unknown,
       > => {
       return useMutation(getDeactivatePaymentMutationOptions(options), queryClient);
     }
+
+export type getCurrentUserResponse200 = {
+  data: UserResponseDTO
+  status: 200
+}
+
+export type getCurrentUserResponseSuccess = (getCurrentUserResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getCurrentUserResponse = (getCurrentUserResponseSuccess)
+
+export const getGetCurrentUserUrl = () => {
+
+
+
+
+  return `/auth/me`
+}
+
+/**
+ * @summary Return the authenticated user
+ */
+export const getCurrentUser = async ( options?: Parameters<typeof customFetch>[1]): Promise<getCurrentUserResponse> => {
+
+  return customFetch<getCurrentUserResponse>(getGetCurrentUserUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentUserQueryKey = () => {
+    return [
+    `/auth/me`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({ signal }) => getCurrentUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCurrentUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>
+export type GetCurrentUserQueryError = unknown
+
+
+/** @summary Return the authenticated user */
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUser>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUser>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Return the authenticated user */
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUser>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUser>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Return the authenticated user */
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/** @summary Return the authenticated user */
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCurrentUserQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}

@@ -6,6 +6,7 @@ import { Toaster } from "@web/ui/components/sonner";
 import { TooltipProvider } from "@web/ui/components/tooltip";
 
 import { getErrorMessage } from "@/api/errors";
+import { AuthProvider } from "@/auth/auth-context";
 
 import "../index.css";
 
@@ -39,8 +40,10 @@ function RootComponent() {
     <>
       <HeadContent />
       <TooltipProvider>
-        <Outlet />
-        <Toaster richColors />
+        <AuthProvider>
+          <Outlet />
+          <Toaster richColors />
+        </AuthProvider>
       </TooltipProvider>
     </>
   );
@@ -56,7 +59,9 @@ function NotFoundComponent() {
           O endereço acessado não existe ou foi movido.
         </p>
       </div>
-      <Button render={<Link to="/admin" />}>Voltar ao painel</Button>
+      <Button nativeButton={false} render={<Link to="/" />}>
+        Voltar ao início
+      </Button>
     </div>
   );
 }

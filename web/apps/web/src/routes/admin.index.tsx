@@ -103,7 +103,12 @@ function DashboardPage() {
             <h2 className="text-xl leading-7 font-medium">Veículos cadastrados</h2>
             <p className="text-sm text-muted-foreground">Veículos ativos no estacionamento.</p>
           </div>
-          <Button variant="outline" size="sm" render={<Link to="/admin/vehicles" />}>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link to="/admin/vehicles" />}
+          >
             Ver todos
           </Button>
         </div>

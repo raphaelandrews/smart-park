@@ -640,6 +640,8 @@ plate after creation.
 **Depends on:** Phases 1–7 and the backend auth/user model described in section 2.7.
 **Outcome:** public login/register and availability, guarded routes, role-aware shell,
 driver area, and admin user management.
+**Status:** backend auth and the auth UI are implemented; driver/admin feature screens and
+public availability remain.
 
 ### Tasks
 
@@ -648,25 +650,25 @@ driver area, and admin user management.
     and the public availability endpoint to the OpenAPI spec, then regenerate.
   - Extend the error normalizer for `401` and `403`.
 
-- [ ] **8.2 Auth bootstrap**
+- [x] **8.2 Auth bootstrap**
   - `useMe()` query under `['me']` with `retry: false`.
   - Gate the app on the first `/auth/me` result (loading state, no redirect flicker).
   - Store the authenticated user in router context for guards.
 
-- [ ] **8.3 Public layout and login**
+- [x] **8.3 Public layout and login**
   - Public layout without sidebar for `/`, `/login`, `/register`.
   - `/login`: email + password, inline validation, server error display, link to
     register.
   - Preserve `?redirect=` and return there after login when the role allows it.
   - Redirect authenticated users visiting `/login` to their role home.
 
-- [ ] **8.4 Registration**
+- [x] **8.4 Registration**
   - `/register`: name, email, password, confirmation.
   - Always creates `USER`; never render or send a role field.
   - Handle duplicate email, weak password, and disabled account errors.
   - On success, log in or send the user to `/login`.
 
-- [ ] **8.5 Route guards**
+- [x] **8.5 Route guards**
   - `_authenticated` pathless layout: unauthenticated → `/login?redirect=...`.
   - `_admin` layout: `USER` → access-denied page; never silently redirect to `/login`.
   - Role home redirect: `ADMIN` → `/admin`, `USER` → `/my`.

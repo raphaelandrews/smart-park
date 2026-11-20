@@ -142,8 +142,22 @@ spaces (`A1`, `A2`, `A3`) when the API is reachable.
 
 ### Custom domain
 
-Add the domain in Cloudflare, point it at the worker, then append it to
-`CORS_ALLOWED_ORIGINS` on Render (both origins can coexist, comma-separated).
+Recommended layout with personal subdomains:
+
+| App | Host | Points to |
+|---|---|---|
+| Web | `app.<your-domain>` | Cloudflare Worker |
+| API | `api.<your-domain>` | Render service |
+
+1. Add `api.<your-domain>` as a custom domain in Render.
+2. Add `app.<your-domain>` to the Cloudflare Worker/domain configuration.
+3. Build the web app with `VITE_API_URL=https://api.<your-domain>`.
+4. Set `CORS_ALLOWED_ORIGINS=https://app.<your-domain>` on Render.
+5. Add `https://app.<your-domain>` (and `http://localhost:3001` for local development) to
+   the Google OAuth **Authorized JavaScript origins**.
+
+Authentication uses Bearer tokens in the `Authorization` header, so no cross-subdomain
+cookie configuration is required. Keep the web and API origins exact in CORS.
 
 ---
 

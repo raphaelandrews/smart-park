@@ -39,4 +39,4 @@ app:
     google:
       client-id: ${GOOGLE_CLIENT_ID:}
     admin:
-      name: ${ADMIN_NAME:Administrador}
+      name: ${ADMIN_NAME:Operador}

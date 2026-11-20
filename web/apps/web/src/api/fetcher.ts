@@ -1,11 +1,15 @@
+import { clearAccessToken, getAccessToken, notifyUnauthorized } from "@/auth/token";
+
 import { networkError, normalizeApiError } from "./errors";
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "/api";
 
+const publicAuthPaths = ["/auth/login", "/auth/register", "/auth/google"];
+
 /**
  * Orval mutator: every generated request goes through here so the base URL is
  * configurable. In dev, "/api" is proxied to http://localhost:8080 by Vite.
- * In production, VITE_API_URL is the absolute Render URL.
+ * In production, VITE_API_URL is the API subdomain URL.
  *
  * Regenerate the typed client after API changes:
  *   cd web/apps/web && bun run gen:api
@@ -19,6 +23,12 @@ export async function customFetch<T>(url: string, options: RequestInit = {}): Pr
     headers.set("Content-Type", "application/json");
   }
 
+  const isPublicAuth = publicAuthPaths.some((path) => url.startsWith(path));
+  const accessToken = isPublicAuth ? null : getAccessToken();
+  if (accessToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
   let response: Response;
   try {
     response = await fetch(`${baseUrl}${url}`, { ...options, headers });
@@ -29,6 +39,10 @@ export async function customFetch<T>(url: string, options: RequestInit = {}): Pr
   const body = await readBody(response);
 
   if (!response.ok) {
+    if (response.status === 401 && accessToken) {
+      clearAccessToken();
+      notifyUnauthorized();
+    }
     throw normalizeApiError(response.status, body, response.headers);
   }
 

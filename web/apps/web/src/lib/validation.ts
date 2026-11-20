@@ -148,6 +148,38 @@ export const paymentCreateSchema = z.object({
   amount: money("O valor", 0.01),
 });
 
+// Authentication
+
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "O email é obrigatório")
+    .email("Email inválido")
+    .max(255, "O email deve ter no máximo 255 caracteres"),
+  password: z.string().min(1, "A senha é obrigatória"),
+});
+
+export const registerSchema = z
+  .object({
+    name: requiredText("O nome", 100),
+    email: z
+      .string()
+      .trim()
+      .min(1, "O email é obrigatório")
+      .email("Email inválido")
+      .max(255, "O email deve ter no máximo 255 caracteres"),
+    password: z
+      .string()
+      .min(8, "A senha deve ter entre 8 e 72 caracteres")
+      .max(72, "A senha deve ter entre 8 e 72 caracteres"),
+    confirmPassword: z.string().min(1, "Confirme a senha"),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
+
 export type VehicleCreateInput = z.infer<typeof vehicleCreateSchema>;
 export type VehicleUpdateInput = z.infer<typeof vehicleUpdateSchema>;
 export type ParkingSpaceTypeCreateInput = z.infer<typeof parkingSpaceTypeCreateSchema>;
@@ -159,3 +191,5 @@ export type TariffUpdateInput = z.infer<typeof tariffUpdateSchema>;
 export type TicketCreateInput = z.infer<typeof ticketCreateSchema>;
 export type TicketCloseInput = z.infer<typeof ticketCloseSchema>;
 export type PaymentCreateInput = z.infer<typeof paymentCreateSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type RegisterInput = z.infer<typeof registerSchema>;
