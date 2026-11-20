@@ -8,6 +8,9 @@ services:
     region: virginia
     healthCheckPath: /health/readiness
     autoDeploy: true
+    buildFilter:
+      paths:
+        - api/**
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod

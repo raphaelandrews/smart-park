@@ -8,6 +8,7 @@
     "build": "bun run build:api && bun run build:web",
     "build:api": "cd api && ./mvnw -DskipTests package",
     "build:web": "cd web && bun run build",
+    "deploy:web": "cd web && bun run deploy",
     "lint": "cd web && bunx oxlint",
     "test": "cd api && ./mvnw test",
     "gen:api": "cd web/apps/web && bun run gen:api"
