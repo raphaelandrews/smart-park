@@ -35,7 +35,7 @@ public class TicketController {
     this.service = service;
   }
 
-  @Operation(summary = "List all active tickets")
+  @Operation(operationId = "listTickets", summary = "List all active tickets")
   @GetMapping
   public Page<TicketResponseDTO> findAll(
       @ParameterObject
@@ -43,13 +43,13 @@ public class TicketController {
     return service.findAll(pageable);
   }
 
-  @Operation(summary = "Find a ticket by ID")
+  @Operation(operationId = "getTicket", summary = "Find a ticket by ID")
   @GetMapping("/{id}")
   public TicketResponseDTO findById(@PathVariable Long id) {
     return service.findById(id);
   }
 
-  @Operation(summary = "Open a ticket")
+  @Operation(operationId = "registerTicket", summary = "Open a ticket")
   @PostMapping
   public ResponseEntity<TicketResponseDTO> register(
       @RequestBody @Valid TicketRequestDTO request) {
@@ -59,14 +59,14 @@ public class TicketController {
         .body(created);
   }
 
-  @Operation(summary = "Register the ticket exit time")
+  @Operation(operationId = "updateTicket", summary = "Register the ticket exit time")
   @PutMapping("/{id}")
   public TicketResponseDTO update(@PathVariable Long id,
       @RequestBody @Valid TicketUpdateRequestDTO request) {
     return service.update(id, request);
   }
 
-  @Operation(summary = "Deactivate a ticket")
+  @Operation(operationId = "deactivateTicket", summary = "Deactivate a ticket")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deactivate(@PathVariable Long id) {
     service.deactivate(id);

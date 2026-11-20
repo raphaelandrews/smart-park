@@ -35,7 +35,7 @@ public class VehicleController {
     this.service = service;
   }
 
-  @Operation(summary = "List all active vehicles")
+  @Operation(operationId = "listVehicles", summary = "List all active vehicles")
   @GetMapping
   public Page<VehicleResponseDTO> findAll(
       @ParameterObject
@@ -43,13 +43,13 @@ public class VehicleController {
     return service.findAll(pageable);
   }
 
-  @Operation(summary = "Find a vehicle by ID")
+  @Operation(operationId = "getVehicle", summary = "Find a vehicle by ID")
   @GetMapping("/{id}")
   public VehicleResponseDTO findById(@PathVariable Long id) {
     return service.findById(id);
   }
 
-  @Operation(summary = "Register a vehicle")
+  @Operation(operationId = "registerVehicle", summary = "Register a vehicle")
   @PostMapping
   public ResponseEntity<VehicleResponseDTO> register(
       @RequestBody @Valid VehicleRequestDTO request) {
@@ -59,14 +59,14 @@ public class VehicleController {
         .body(created);
   }
 
-  @Operation(summary = "Update a vehicle")
+  @Operation(operationId = "updateVehicle", summary = "Update a vehicle")
   @PutMapping("/{id}")
   public VehicleResponseDTO update(@PathVariable Long id,
       @RequestBody @Valid VehicleUpdateRequestDTO request) {
     return service.update(id, request);
   }
 
-  @Operation(summary = "Deactivate a vehicle")
+  @Operation(operationId = "deactivateVehicle", summary = "Deactivate a vehicle")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deactivate(@PathVariable Long id) {
     service.deactivate(id);

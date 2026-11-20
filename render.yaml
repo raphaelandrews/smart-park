@@ -13,3 +13,5 @@ services:
         value: prod
       - key: DATABASE_URL
         sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

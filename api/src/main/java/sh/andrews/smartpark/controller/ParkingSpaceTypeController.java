@@ -35,7 +35,7 @@ public class ParkingSpaceTypeController {
     this.service = service;
   }
 
-  @Operation(summary = "List all active parking space types")
+  @Operation(operationId = "listParkingSpaceTypes", summary = "List all active parking space types")
   @GetMapping
   public Page<ParkingSpaceTypeResponseDTO> findAll(
       @ParameterObject
@@ -43,13 +43,13 @@ public class ParkingSpaceTypeController {
     return service.findAll(pageable);
   }
 
-  @Operation(summary = "Find a parking space type by ID")
+  @Operation(operationId = "getParkingSpaceType", summary = "Find a parking space type by ID")
   @GetMapping("/{id}")
   public ParkingSpaceTypeResponseDTO findById(@PathVariable Long id) {
     return service.findById(id);
   }
 
-  @Operation(summary = "Register a parking space type")
+  @Operation(operationId = "registerParkingSpaceType", summary = "Register a parking space type")
   @PostMapping
   public ResponseEntity<ParkingSpaceTypeResponseDTO> register(
       @RequestBody @Valid ParkingSpaceTypeRequestDTO request) {
@@ -59,14 +59,14 @@ public class ParkingSpaceTypeController {
         .body(created);
   }
 
-  @Operation(summary = "Update a parking space type")
+  @Operation(operationId = "updateParkingSpaceType", summary = "Update a parking space type")
   @PutMapping("/{id}")
   public ParkingSpaceTypeResponseDTO update(@PathVariable Long id,
       @RequestBody @Valid ParkingSpaceTypeUpdateRequestDTO request) {
     return service.update(id, request);
   }
 
-  @Operation(summary = "Deactivate a parking space type")
+  @Operation(operationId = "deactivateParkingSpaceType", summary = "Deactivate a parking space type")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deactivate(@PathVariable Long id) {
     service.deactivate(id);

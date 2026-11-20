@@ -35,7 +35,7 @@ public class TariffController {
     this.service = service;
   }
 
-  @Operation(summary = "List all active tariffs")
+  @Operation(operationId = "listTariffs", summary = "List all active tariffs")
   @GetMapping
   public Page<TariffResponseDTO> findAll(
       @ParameterObject
@@ -43,13 +43,13 @@ public class TariffController {
     return service.findAll(pageable);
   }
 
-  @Operation(summary = "Find a tariff by ID")
+  @Operation(operationId = "getTariff", summary = "Find a tariff by ID")
   @GetMapping("/{id}")
   public TariffResponseDTO findById(@PathVariable Long id) {
     return service.findById(id);
   }
 
-  @Operation(summary = "Register a tariff")
+  @Operation(operationId = "registerTariff", summary = "Register a tariff")
   @PostMapping
   public ResponseEntity<TariffResponseDTO> register(
       @RequestBody @Valid TariffRequestDTO request) {
@@ -59,14 +59,14 @@ public class TariffController {
         .body(created);
   }
 
-  @Operation(summary = "Update a tariff")
+  @Operation(operationId = "updateTariff", summary = "Update a tariff")
   @PutMapping("/{id}")
   public TariffResponseDTO update(@PathVariable Long id,
       @RequestBody @Valid TariffUpdateRequestDTO request) {
     return service.update(id, request);
   }
 
-  @Operation(summary = "Deactivate a tariff")
+  @Operation(operationId = "deactivateTariff", summary = "Deactivate a tariff")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deactivate(@PathVariable Long id) {
     service.deactivate(id);

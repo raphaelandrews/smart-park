@@ -33,7 +33,7 @@ public class PaymentController {
     this.service = service;
   }
 
-  @Operation(summary = "List all active payments")
+  @Operation(operationId = "listPayments", summary = "List all active payments")
   @GetMapping
   public Page<PaymentResponseDTO> findAll(
       @ParameterObject
@@ -41,13 +41,13 @@ public class PaymentController {
     return service.findAll(pageable);
   }
 
-  @Operation(summary = "Find a payment by ID")
+  @Operation(operationId = "getPayment", summary = "Find a payment by ID")
   @GetMapping("/{id}")
   public PaymentResponseDTO findById(@PathVariable Long id) {
     return service.findById(id);
   }
 
-  @Operation(summary = "Register a payment")
+  @Operation(operationId = "registerPayment", summary = "Register a payment")
   @PostMapping
   public ResponseEntity<PaymentResponseDTO> register(
       @RequestBody @Valid PaymentRequestDTO request) {
@@ -57,7 +57,7 @@ public class PaymentController {
         .body(created);
   }
 
-  @Operation(summary = "Deactivate a payment")
+  @Operation(operationId = "deactivatePayment", summary = "Deactivate a payment")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deactivate(@PathVariable Long id) {
     service.deactivate(id);
