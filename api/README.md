@@ -32,6 +32,58 @@ Reset the local database:
 rm -rf data
 ```
 
+## Authentication
+
+The API uses stateless JWT Bearer tokens.
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| `POST` | `/auth/register` | public | Create a `USER` with name, email, password |
+| `POST` | `/auth/login` | public | Email + password → access token |
+| `POST` | `/auth/google` | public | Google ID token → access token |
+| `GET` | `/auth/me` | authenticated | Current user and role |
+| `POST` | `/auth/logout` | authenticated | No-op; the client discards the token |
+
+Send the token as `Authorization: Bearer <token>`. Access tokens last 8 hours by
+default (`app.security.jwt.access-token-ttl`).
+
+### Dev administrator
+
+The `dev` profile seeds an administrator on startup:
+
+| Field | Default |
+|---|---|
+| Email | `admin@smartpark.local` |
+| Password | `smartpark123` |
+
+Override with `ADMIN_EMAIL` / `ADMIN_PASSWORD`. In production the admin is seeded only
+when both variables are set; the configured password is synchronized on startup.
+
+### Google login
+
+Create a **Web application** OAuth Client ID in Google Cloud Console. Set
+`GOOGLE_CLIENT_ID` on the API. The frontend obtains a Google ID token (Google Identity
+Services) and posts it to `/auth/google` as `idToken`; the API verifies issuer,
+audience, expiry, and `email_verified` before creating or linking the user.
+
+Leave `GOOGLE_CLIENT_ID` empty to disable Google login; the endpoint returns `503`.
+
+### Authorization
+
+- `USER`: own vehicles, tickets, and payments.
+- `ADMIN`: all records plus parking spaces, space types, and tariffs.
+- Public routes: auth endpoints, `/public/**`, `/health/**`, `/info`, Swagger/OpenAPI,
+  and `/error`.
+
+### Environment
+
+| Variable | Meaning |
+|---|---|
+| `JWT_SECRET` | Required in prod; at least 32 bytes |
+| `GOOGLE_CLIENT_ID` | Enables Google ID-token login |
+| `ADMIN_EMAIL` | Seeded administrator email |
+| `ADMIN_PASSWORD` | Seeded administrator password |
+
 ## Profiles
 
 | Profile | Database | Notes |

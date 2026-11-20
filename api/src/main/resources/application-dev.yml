@@ -16,3 +16,9 @@ spring:
 app:
   rate-limit:
     enabled: false
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-smart-park-jwt-secret-change-me-please-1234567890}
+    admin:
+      email: ${ADMIN_EMAIL:admin@smartpark.local}
+      password: ${ADMIN_PASSWORD:smartpark123}

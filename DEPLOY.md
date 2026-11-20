@@ -42,10 +42,19 @@ buildFilter:
 | `SPRING_PROFILES_ACTIVE` | `prod` | already in `render.yaml` |
 | `DATABASE_URL` | Neon connection string, e.g. `postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/neondb?sslmode=require` | Render dashboard (`sync: false`) |
 | `CORS_ALLOWED_ORIGINS` | `https://<worker>.workers.dev` (comma-separated for more) | Render dashboard (`sync: false`) |
+| `JWT_SECRET` | Random string with at least 32 bytes; signs access tokens | Render dashboard (`sync: false`) |
+| `GOOGLE_CLIENT_ID` | Google OAuth Web Client ID; enables Google login | Render dashboard (`sync: false`) |
+| `ADMIN_EMAIL` | Email for the seeded administrator | Render dashboard (`sync: false`) |
+| `ADMIN_PASSWORD` | Password for the seeded administrator | Render dashboard (`sync: false`) |
 | `PORT` | set by Render automatically | — |
 
 `DATABASE_URL` is accepted in `postgresql://` form; the app converts it to JDBC at
 startup. Do not commit it.
+
+Authentication uses stateless JWT Bearer tokens. `JWT_SECRET` is required in production
+and must be at least 32 bytes. `ADMIN_EMAIL`/`ADMIN_PASSWORD` seed or synchronize the
+administrator account on startup. `GOOGLE_CLIENT_ID` enables `POST /auth/google`; leave
+it empty to disable Google login. See `api/README.md` for the auth endpoints.
 
 ### Blueprint vs manual service
 

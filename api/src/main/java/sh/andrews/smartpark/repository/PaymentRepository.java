@@ -22,6 +22,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
   Optional<Payment> findByIdAndActiveTrue(Long id);
 
+  Optional<Payment> findByIdAndActiveTrueAndTicketVehicleOwnerId(Long id, Long ownerId);
+
   List<Payment> findByPaymentDateTimeBetweenAndActiveTrueOrderByPaymentDateTimeAsc(
       LocalDateTime start, LocalDateTime end);
 
@@ -36,4 +38,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   List<Payment> findTop5ByActiveTrueOrderByPaymentDateTimeDesc();
 
   Page<Payment> findByActiveTrue(Pageable pageable);
+
+  Page<Payment> findByActiveTrueAndTicketVehicleOwnerId(Long ownerId, Pageable pageable);
 }

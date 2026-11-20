@@ -18,6 +18,7 @@ import sh.andrews.smartpark.repository.ParkingSpaceRepository;
 import sh.andrews.smartpark.repository.TariffRepository;
 import sh.andrews.smartpark.repository.TicketRepository;
 import sh.andrews.smartpark.repository.VehicleRepository;
+import sh.andrews.smartpark.security.CurrentUserService;
 
 @Service
 public class TicketService {
@@ -26,15 +27,18 @@ public class TicketService {
   private final VehicleRepository vehicleRepository;
   private final ParkingSpaceRepository parkingSpaceRepository;
   private final TariffRepository tariffRepository;
+  private final CurrentUserService currentUserService;
 
   public TicketService(TicketRepository ticketRepository,
       VehicleRepository vehicleRepository,
       ParkingSpaceRepository parkingSpaceRepository,
-      TariffRepository tariffRepository) {
+      TariffRepository tariffRepository,
+      CurrentUserService currentUserService) {
     this.ticketRepository = ticketRepository;
     this.vehicleRepository = vehicleRepository;
     this.parkingSpaceRepository = parkingSpaceRepository;
     this.tariffRepository = tariffRepository;
+    this.currentUserService = currentUserService;
   }
 
   @Transactional
@@ -67,7 +71,13 @@ public class TicketService {
 
   @Transactional(readOnly = true)
   public Page<TicketResponseDTO> findAll(Pageable pageable) {
-    return ticketRepository.findByActiveTrue(pageable)
+    if (currentUserService.isAdmin()) {
+      return ticketRepository.findByActiveTrue(pageable)
+          .map(TicketResponseDTO::fromEntity);
+    }
+
+    Long ownerId = currentUserService.requireCurrentUser().getId();
+    return ticketRepository.findByActiveTrueAndVehicleOwnerId(ownerId, pageable)
         .map(TicketResponseDTO::fromEntity);
   }
 
@@ -94,13 +104,27 @@ public class TicketService {
   }
 
   private Ticket findActiveEntity(Long id) {
-    return ticketRepository.findByIdAndActiveTrue(id)
+    if (currentUserService.isAdmin()) {
+      return ticketRepository.findByIdAndActiveTrue(id)
+          .orElseThrow(() -> new ResourceNotFoundException(
+              "Ticket " + id + " não encontrado."));
+    }
+
+    Long ownerId = currentUserService.requireCurrentUser().getId();
+    return ticketRepository.findByIdAndActiveTrueAndVehicleOwnerId(id, ownerId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Ticket " + id + " não encontrado."));
   }
 
   private Vehicle findActiveVehicle(Long id) {
-    return vehicleRepository.findByIdAndActiveTrue(id)
+    if (currentUserService.isAdmin()) {
+      return vehicleRepository.findByIdAndActiveTrue(id)
+          .orElseThrow(() -> new ResourceNotFoundException(
+              "Veículo " + id + " não encontrado."));
+    }
+
+    Long ownerId = currentUserService.requireCurrentUser().getId();
+    return vehicleRepository.findByIdAndActiveTrueAndOwnerId(id, ownerId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Veículo " + id + " não encontrado."));
   }

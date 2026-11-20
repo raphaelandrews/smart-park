@@ -3,6 +3,8 @@ spring:
     name: smart-park
   profiles:
     active: dev
+  jpa:
+    open-in-view: false
 
 server:
   port: ${PORT:8080}
@@ -30,3 +32,11 @@ app:
     capacity: 60
     refill-tokens: 60
     refill-period: 1m
+  security:
+    jwt:
+      issuer: smart-park-api
+      access-token-ttl: 8h
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+    admin:
+      name: ${ADMIN_NAME:Administrador}

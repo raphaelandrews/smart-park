@@ -21,6 +21,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   Optional<Vehicle> findByIdAndActiveTrue(Long id);
 
+  Optional<Vehicle> findByIdAndActiveTrueAndOwnerId(Long id, Long ownerId);
+
   List<Vehicle> findByVehicleTypeAndActiveTrueOrderByModelAsc(VehicleType vehicleType);
 
   List<Vehicle> findByModelContainingIgnoreCase(String fragment);
@@ -36,4 +38,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
   List<Vehicle> findTop5ByActiveTrueOrderByCreatedAtDesc();
 
   Page<Vehicle> findByActiveTrue(Pageable pageable);
+
+  Page<Vehicle> findByActiveTrueAndOwnerId(Long ownerId, Pageable pageable);
 }

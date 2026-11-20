@@ -29,6 +29,28 @@ public class GlobalExceptionHandler {
     return response(HttpStatus.CONFLICT, "Recurso duplicado", ex.getMessage(), request);
   }
 
+  @ExceptionHandler(InvalidCredentialsException.class)
+  public ResponseEntity<StandardError> invalidCredentials(
+      InvalidCredentialsException ex,
+      HttpServletRequest request) {
+    return response(HttpStatus.UNAUTHORIZED, "Credenciais inválidas", ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(UnauthorizedException.class)
+  public ResponseEntity<StandardError> unauthorized(
+      UnauthorizedException ex,
+      HttpServletRequest request) {
+    return response(HttpStatus.UNAUTHORIZED, "Não autorizado", ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(AuthProviderUnavailableException.class)
+  public ResponseEntity<StandardError> providerUnavailable(
+      AuthProviderUnavailableException ex,
+      HttpServletRequest request) {
+    return response(HttpStatus.SERVICE_UNAVAILABLE, "Serviço indisponível",
+        ex.getMessage(), request);
+  }
+
   @ExceptionHandler(BusinessRuleException.class)
   public ResponseEntity<StandardError> businessRule(
       BusinessRuleException ex,

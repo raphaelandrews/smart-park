@@ -13,17 +13,21 @@ import sh.andrews.smartpark.model.entity.Payment;
 import sh.andrews.smartpark.model.entity.Ticket;
 import sh.andrews.smartpark.repository.PaymentRepository;
 import sh.andrews.smartpark.repository.TicketRepository;
+import sh.andrews.smartpark.security.CurrentUserService;
 
 @Service
 public class PaymentService {
 
   private final PaymentRepository paymentRepository;
   private final TicketRepository ticketRepository;
+  private final CurrentUserService currentUserService;
 
   public PaymentService(PaymentRepository paymentRepository,
-      TicketRepository ticketRepository) {
+      TicketRepository ticketRepository,
+      CurrentUserService currentUserService) {
     this.paymentRepository = paymentRepository;
     this.ticketRepository = ticketRepository;
+    this.currentUserService = currentUserService;
   }
 
   @Transactional
@@ -45,7 +49,13 @@ public class PaymentService {
 
   @Transactional(readOnly = true)
   public Page<PaymentResponseDTO> findAll(Pageable pageable) {
-    return paymentRepository.findByActiveTrue(pageable)
+    if (currentUserService.isAdmin()) {
+      return paymentRepository.findByActiveTrue(pageable)
+          .map(PaymentResponseDTO::fromEntity);
+    }
+
+    Long ownerId = currentUserService.requireCurrentUser().getId();
+    return paymentRepository.findByActiveTrueAndTicketVehicleOwnerId(ownerId, pageable)
         .map(PaymentResponseDTO::fromEntity);
   }
 
@@ -56,13 +66,27 @@ public class PaymentService {
   }
 
   private Payment findActiveEntity(Long id) {
-    return paymentRepository.findByIdAndActiveTrue(id)
+    if (currentUserService.isAdmin()) {
+      return paymentRepository.findByIdAndActiveTrue(id)
+          .orElseThrow(() -> new ResourceNotFoundException(
+              "Pagamento " + id + " não encontrado."));
+    }
+
+    Long ownerId = currentUserService.requireCurrentUser().getId();
+    return paymentRepository.findByIdAndActiveTrueAndTicketVehicleOwnerId(id, ownerId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Pagamento " + id + " não encontrado."));
   }
 
   private Ticket findActiveTicket(Long id) {
-    return ticketRepository.findByIdAndActiveTrue(id)
+    if (currentUserService.isAdmin()) {
+      return ticketRepository.findByIdAndActiveTrue(id)
+          .orElseThrow(() -> new ResourceNotFoundException(
+              "Ticket " + id + " não encontrado."));
+    }
+
+    Long ownerId = currentUserService.requireCurrentUser().getId();
+    return ticketRepository.findByIdAndActiveTrueAndVehicleOwnerId(id, ownerId)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Ticket " + id + " não encontrado."));
   }

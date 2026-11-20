@@ -20,6 +20,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
   Optional<Ticket> findByIdAndActiveTrue(Long id);
 
+  Optional<Ticket> findByIdAndActiveTrueAndVehicleOwnerId(Long id, Long ownerId);
+
   Optional<Ticket> findByVehicleIdAndExitTimeIsNullAndActiveTrue(Long vehicleId);
 
   boolean existsByVehicleIdAndExitTimeIsNullAndActiveTrue(Long vehicleId);
@@ -43,4 +45,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
   List<Ticket> findTop5ByActiveTrueOrderByCreatedAtDesc();
 
   Page<Ticket> findByActiveTrue(Pageable pageable);
+
+  Page<Ticket> findByActiveTrueAndVehicleOwnerId(Long ownerId, Pageable pageable);
 }
