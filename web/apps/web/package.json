@@ -9,10 +9,12 @@
     "start": "vite",
     "check-types": "vite build && tsc --noEmit",
     "dev:bare": "vite dev",
+    "gen:api": "curl -fsS http://localhost:8080/v3/api-docs -o openapi.json && orval",
     "env:generate": "varlock codegen"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.5",
+    "@tanstack/react-query": "^5.108.2",
     "@tanstack/react-router": "^1.170.46",
     "@web/ui": "workspace:*",
     "lucide-react": "catalog:",
@@ -31,6 +33,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^6.3.0",
     "@web/config": "workspace:*",
+    "orval": "^8.48.0",
     "postcss": "^8.5.32",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
