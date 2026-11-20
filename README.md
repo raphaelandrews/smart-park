@@ -1,28 +1,39 @@
 # Smart Park
 
-Requirements: JDK 21 and Bun.
+```bash
+git clone https://github.com/raphaelandrews/smart-park.git
+cd smart-park
+```
 
-## Run
+**2. Install dependencies**
 
 ```bash
 bun install
 (cd web && bun install)
+```
+
+**3. Start API and web**
+
+```bash
 bun run dev
 ```
 
-- Web: <http://localhost:3001>
-- API: <http://localhost:8080>
-- Swagger: <http://localhost:8080/swagger-ui/index.html>
+Stop with `Ctrl+C`. The database is created and seeded automatically at
+`api/data/`; delete that folder to reset it.
 
-## Commands
+## Run only the API (H2)
+
+**1. Clone**
 
 ```bash
-bun run dev        # run API + web
-bun run build      # build both
-bun run test       # API tests
-bun run gen:api    # regenerate the typed client (API must be running)
+git clone https://github.com/raphaelandrews/smart-park.git
+cd smart-park
 ```
 
-## Deploy
+**2. Start the API**
 
-See [DEPLOY.md](DEPLOY.md).
+```bash
+cd api
+./mvnw spring-boot:run
+```
+
