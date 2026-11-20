@@ -11,6 +11,7 @@
     "deploy:web": "cd web && bun run deploy",
     "lint": "cd web && bunx oxlint",
     "test": "cd api && ./mvnw test",
+    "test:web": "cd web/apps/web && bun test",
     "gen:api": "cd web/apps/web && bun run gen:api"
   },
   "devDependencies": {

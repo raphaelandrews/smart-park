@@ -1,9 +1,11 @@
-import { HeadContent, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { HeadContent, Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Alert02Icon } from "@hugeicons/core-free-icons";
+import { Button } from "@web/ui/components/button";
 import { Toaster } from "@web/ui/components/sonner";
+import { TooltipProvider } from "@web/ui/components/tooltip";
 
-import Header from "@/components/header";
-import { ThemeProvider } from "@/components/theme-provider";
+import { getErrorMessage } from "@/api/errors";
 
 import "../index.css";
 
@@ -11,14 +13,16 @@ export interface RouterAppContext {}
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
   component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: RootErrorComponent,
   head: () => ({
     meta: [
       {
-        title: "web",
+        title: "Smart Park — Gestão de estacionamento",
       },
       {
         name: "description",
-        content: "web is a web application",
+        content: "Gestão de vagas, veículos, tickets e pagamentos do Smart Park.",
       },
     ],
     links: [
@@ -34,19 +38,43 @@ function RootComponent() {
   return (
     <>
       <HeadContent />
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="dark"
-        disableTransitionOnChange
-        storageKey="vite-ui-theme"
-      >
-        <div className="grid grid-rows-[auto_1fr] h-svh">
-          <Header />
-          <Outlet />
-        </div>
+      <TooltipProvider>
+        <Outlet />
         <Toaster richColors />
-      </ThemeProvider>
-      <TanStackRouterDevtools position="bottom-left" />
+      </TooltipProvider>
     </>
+  );
+}
+
+function NotFoundComponent() {
+  return (
+    <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
+      <p className="text-5xl font-medium tracking-tight">404</p>
+      <div className="space-y-1">
+        <h1 className="text-sm font-medium">Página não encontrada</h1>
+        <p className="text-sm text-muted-foreground">
+          O endereço acessado não existe ou foi movido.
+        </p>
+      </div>
+      <Button render={<Link to="/admin" />}>Voltar ao painel</Button>
+    </div>
+  );
+}
+
+function RootErrorComponent({ error }: { error: unknown }) {
+  return (
+    <div
+      role="alert"
+      className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center"
+    >
+      <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-8 text-destructive" />
+      <div className="space-y-1">
+        <h1 className="text-sm font-medium">Algo deu errado</h1>
+        <p className="max-w-md text-sm text-muted-foreground">{getErrorMessage(error)}</p>
+      </div>
+      <Button variant="outline" onClick={() => window.location.reload()}>
+        Recarregar página
+      </Button>
+    </div>
   );
 }
