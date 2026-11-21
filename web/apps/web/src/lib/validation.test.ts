@@ -53,10 +53,24 @@ describe("numeric form inputs", () => {
       firstHourRate: "10",
       additionalHourRate: "5.50",
       toleranceMinutes: "15",
+      vehicleType: "",
     });
     expect(parsed.firstHourRate).toBe(10);
     expect(parsed.additionalHourRate).toBe(5.5);
     expect(parsed.toleranceMinutes).toBe(15);
+    expect(parsed.vehicleType).toBeNull();
+  });
+
+  test("maps a vehicle type and an empty value to the default", () => {
+    expect(
+      tariffCreateSchema.parse({
+        description: "Moto",
+        firstHourRate: "6",
+        additionalHourRate: "3",
+        toleranceMinutes: "10",
+        vehicleType: "MOTORCYCLE",
+      }).vehicleType,
+    ).toBe("MOTORCYCLE");
   });
 
   test("rejects empty, negative and overly precise values", () => {
@@ -66,6 +80,7 @@ describe("numeric form inputs", () => {
         firstHourRate: "",
         additionalHourRate: "5",
         toleranceMinutes: "15",
+        vehicleType: "",
       }).success,
     ).toBe(false);
 
@@ -75,6 +90,7 @@ describe("numeric form inputs", () => {
         firstHourRate: "-1",
         additionalHourRate: "5",
         toleranceMinutes: "15",
+        vehicleType: "",
       }).success,
     ).toBe(false);
 
@@ -84,6 +100,7 @@ describe("numeric form inputs", () => {
         firstHourRate: "10.999",
         additionalHourRate: "5",
         toleranceMinutes: "15",
+        vehicleType: "",
       }).success,
     ).toBe(false);
   });
@@ -95,6 +112,7 @@ describe("numeric form inputs", () => {
         firstHourRate: "10",
         additionalHourRate: "5",
         toleranceMinutes: "1.5",
+        vehicleType: "",
       }).success,
     ).toBe(false);
   });

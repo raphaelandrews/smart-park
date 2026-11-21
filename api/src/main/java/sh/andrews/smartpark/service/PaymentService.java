@@ -43,8 +43,6 @@ public class PaymentService {
       throw new DuplicateResourceException("pagamento", "ticket", ticket.getId());
     }
 
-    // Payment is the checkout operation: it closes the session and records the
-    // server-calculated amount in the same transaction.
     if (ticket.getExitTime() == null) {
       ticket.setExitTime(LocalDateTime.now());
       ticketRepository.save(ticket);

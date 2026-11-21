@@ -20,16 +20,12 @@ export function isTicketOpen(ticket: TicketResponseDTO): boolean {
   return ticket.active !== false && !ticket.exitTime;
 }
 
-export function isPaymentActive(payment: PaymentResponseDTO): boolean {
+function isPaymentActive(payment: PaymentResponseDTO): boolean {
   return payment.active !== false;
 }
 
 export function getOpenTickets(tickets: TicketResponseDTO[]): TicketResponseDTO[] {
   return tickets.filter(isTicketOpen);
-}
-
-export function getActivePayments(payments: PaymentResponseDTO[]): PaymentResponseDTO[] {
-  return payments.filter(isPaymentActive);
 }
 
 /**
@@ -52,10 +48,6 @@ export function getSpaceStatus(
   }
 
   return "AVAILABLE";
-}
-
-export function isVehicleParked(vehicleId: number, tickets: TicketResponseDTO[]): boolean {
-  return tickets.some((ticket) => isTicketOpen(ticket) && ticket.vehicleId === vehicleId);
 }
 
 export function isTicketPaid(ticketId: number, payments: PaymentResponseDTO[]): boolean {

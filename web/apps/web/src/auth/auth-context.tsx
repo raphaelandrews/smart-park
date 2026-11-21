@@ -24,7 +24,6 @@ import {
   type UserResponseDTO,
 } from "@/api/generated";
 
-import type { AuthRole } from "./session";
 import { AUTH_UNAUTHORIZED_EVENT, clearAccessToken, getAccessToken, setAccessToken } from "./token";
 
 interface AuthContextValue {
@@ -151,8 +150,4 @@ export function useAuth(): AuthContextValue {
     throw new Error("useAuth must be used within an AuthProvider.");
   }
   return context;
-}
-
-export function useAuthRole(): AuthRole | undefined {
-  return useAuth().user?.role;
 }

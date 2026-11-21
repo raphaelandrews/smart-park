@@ -1,50 +1,25 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
-import { useQueryClient } from "@tanstack/react-query";
-import { useForm, useStore } from "@tanstack/react-form";
 import { Add01Icon, Ticket01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
-
-import { getErrorMessage } from "@/api/errors";
+import { useMemo, useState } from "react";
 import type { TicketResponseDTO } from "@/api/generated";
-import {
-  getListAvailableParkingSpacesQueryKey,
-  getListPaymentsQueryKey,
-  getListParkingSpacesQueryKey,
-  getListTicketsQueryKey,
-  getListVehiclesQueryKey,
-  useRegisterTicket,
-} from "@/api/generated";
-import {
-  useAllParkingSpaces,
-  useAllPayments,
-  useAllTariffs,
-  useAllTickets,
-  useAllVehicles,
-} from "@/api/lookups";
-import { applyServerFieldErrors } from "@/auth/form-utils";
+import { useAllPayments, useAllTickets } from "@/api/lookups";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
-import { FormDialog } from "@/components/form-dialog";
-import { FormError } from "@/components/forms/form-fields";
-import { FormSelectField } from "@/components/forms/tanstack-fields";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { StatusBadge } from "@/components/status-badge";
+import { TicketCreateDialog } from "@/features/tickets/ticket-create-dialog";
 import {
-  formatCurrency,
   formatCompactDateTime,
   formatDateTime,
   formatDurationMinutes,
   getDurationMinutes,
   getElapsedMinutes,
 } from "@/lib/format";
-import { getOpenTickets, getSpaceStatus, isTicketOpen } from "@/lib/parking";
+import { isTicketOpen } from "@/lib/parking";
 import type { SortState } from "@/lib/table";
-import { ticketCreateSchema } from "@/lib/validation";
 
 const PAGE_SIZE = 10;
 
@@ -81,25 +56,15 @@ function compareTickets(
   return sort.direction === "asc" ? result : -result;
 }
 
-export const Route = createFileRoute("/admin/tickets")({
-  component: TicketsPage,
-});
-
-function TicketsPage() {
-  const queryClient = useQueryClient();
+export function TicketsPage() {
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState<TicketFilter>("open");
   const [sort, setSort] = useState<SortState>({ field: "entryTime", direction: "desc" });
   const [createOpen, setCreateOpen] = useState(false);
-  const [createFormError, setCreateFormError] = useState<string | null>(null);
 
   const tickets = useAllTickets();
-  const vehicles = useAllVehicles();
-  const spaces = useAllParkingSpaces();
-  const tariffs = useAllTariffs();
   const payments = useAllPayments();
 
-  const openTickets = useMemo(() => getOpenTickets(tickets.items), [tickets.items]);
   const paymentsByTicket = useMemo(() => {
     const map = new Map<number, boolean>();
     for (const payment of payments.items) {
@@ -134,116 +99,6 @@ function TicketsPage() {
   const totalPages = Math.max(1, Math.ceil(sortedTickets.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const pageRows = sortedTickets.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
-
-  const createMutation = useRegisterTicket({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
-
-  const createForm = useForm({
-    defaultValues: {
-      vehicleId: "" as string | number,
-      parkingSpaceId: "" as string | number,
-      tariffId: "" as string | number,
-    },
-    validators: {
-      onChange: ticketCreateSchema,
-      onSubmit: ticketCreateSchema,
-    },
-    listeners: {
-      onChange: () => setCreateFormError(null),
-    },
-    onSubmit: async ({ value, formApi }) => {
-      setCreateFormError(null);
-      const parsed = ticketCreateSchema.safeParse(value);
-      if (!parsed.success) {
-        return;
-      }
-
-      try {
-        await createMutation.mutateAsync({ data: parsed.data });
-        toast.success("Ticket aberto.");
-        setCreateOpen(false);
-        setFilter("open");
-        setPage(0);
-        await invalidate();
-      } catch (error) {
-        applyServerFieldErrors(formApi, error);
-        setCreateFormError(getErrorMessage(error));
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (!createOpen) {
-      return;
-    }
-    createForm.reset({ vehicleId: "", parkingSpaceId: "", tariffId: "" });
-  }, [createOpen, createForm]);
-
-  const createFormSubmitting = useStore(createForm.store, (state) => state.isSubmitting);
-  const isSubmitting = createFormSubmitting || createMutation.isPending;
-
-  const vehicleOptions = useMemo(() => {
-    const parked = new Set(openTickets.map((ticket) => ticket.vehicleId));
-    return vehicles.items.flatMap((vehicle) =>
-      vehicle.id !== undefined && !parked.has(vehicle.id)
-        ? [
-            {
-              value: String(vehicle.id),
-              label: `${vehicle.licensePlate ?? "—"} · ${vehicle.model ?? "Sem modelo"}`,
-            },
-          ]
-        : [],
-    );
-  }, [vehicles.items, openTickets]);
-
-  const spaceOptions = useMemo(
-    () =>
-      spaces.items.flatMap((space) =>
-        space.id !== undefined && getSpaceStatus(space, openTickets) === "AVAILABLE"
-          ? [
-              {
-                value: String(space.id),
-                label: `${space.code ?? "—"} · ${space.parkingSpaceTypeName ?? "Sem tipo"}`,
-              },
-            ]
-          : [],
-      ),
-    [spaces.items, openTickets],
-  );
-
-  const tariffOptions = useMemo(
-    () =>
-      tariffs.items.flatMap((tariff) =>
-        tariff.id !== undefined
-          ? [
-              {
-                value: String(tariff.id),
-                label: `${tariff.description ?? "Tarifa"} · ${formatCurrency(tariff.firstHourRate)} / 1ª hora`,
-              },
-            ]
-          : [],
-      ),
-    [tariffs.items],
-  );
-
-  async function invalidate() {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: getListTicketsQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListParkingSpacesQueryKey() }),
-      queryClient.invalidateQueries({
-        queryKey: getListAvailableParkingSpacesQueryKey(),
-      }),
-      queryClient.invalidateQueries({ queryKey: getListVehiclesQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() }),
-    ]);
-  }
-
-  function openCreate() {
-    createForm.reset({ vehicleId: "", parkingSpaceId: "", tariffId: "" });
-    setCreateFormError(null);
-    setCreateOpen(true);
-  }
 
   const columns: DataTableColumn<TicketResponseDTO>[] = [
     {
@@ -341,7 +196,7 @@ function TicketsPage() {
         title="Tickets"
         description="Acompanhe as sessões abertas e pagas do estacionamento."
         actions={
-          <Button onClick={openCreate}>
+          <Button onClick={() => setCreateOpen(true)}>
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
             Abrir ticket
           </Button>
@@ -459,66 +314,14 @@ function TicketsPage() {
         />
       </section>
 
-      <FormDialog
+      <TicketCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        title="Abrir ticket"
-        description="Selecione um veículo livre, uma vaga disponível e a tarifa aplicada."
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void createForm.handleSubmit();
+        onCreated={() => {
+          setFilter("open");
+          setPage(0);
         }}
-        submitLabel="Abrir ticket"
-        isSubmitting={isSubmitting}
-      >
-        <FormError message={createFormError} />
-        <createForm.Field name="vehicleId">
-          {(field) => (
-            <FormSelectField
-              field={field}
-              id="ticket-vehicle"
-              label="Veículo"
-              options={vehicleOptions}
-              placeholder={
-                vehicles.query.isPending ? "Carregando veículos..." : "Selecione o veículo"
-              }
-              description={
-                vehicleOptions.length === 0
-                  ? "Todos os veículos cadastrados já estão em uma sessão aberta."
-                  : undefined
-              }
-            />
-          )}
-        </createForm.Field>
-        <createForm.Field name="parkingSpaceId">
-          {(field) => (
-            <FormSelectField
-              field={field}
-              id="ticket-space"
-              label="Vaga"
-              options={spaceOptions}
-              placeholder={spaces.query.isPending ? "Carregando vagas..." : "Selecione a vaga"}
-              description={
-                spaceOptions.length === 0
-                  ? "Não há vagas disponíveis no momento."
-                  : "Somente vagas livres e não bloqueadas aparecem aqui."
-              }
-            />
-          )}
-        </createForm.Field>
-        <createForm.Field name="tariffId">
-          {(field) => (
-            <FormSelectField
-              field={field}
-              id="ticket-tariff"
-              label="Tarifa"
-              options={tariffOptions}
-              placeholder={tariffs.query.isPending ? "Carregando tarifas..." : "Selecione a tarifa"}
-            />
-          )}
-        </createForm.Field>
-      </FormDialog>
+      />
     </div>
   );
 }

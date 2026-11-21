@@ -9,13 +9,28 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import sh.andrews.smartpark.model.entity.Tariff;
+import sh.andrews.smartpark.model.enums.VehicleType;
 
 @Repository
 public interface TariffRepository extends JpaRepository<Tariff, Long> {
 
   boolean existsByDescription(String description);
 
+  Optional<Tariff> findByDescription(String description);
+
   Optional<Tariff> findByIdAndActiveTrue(Long id);
+
+  Optional<Tariff> findFirstByVehicleTypeAndActiveTrueOrderByIdAsc(VehicleType vehicleType);
+
+  Optional<Tariff> findFirstByVehicleTypeIsNullAndActiveTrueOrderByIdAsc();
+
+  boolean existsByVehicleTypeAndActiveTrue(VehicleType vehicleType);
+
+  boolean existsByVehicleTypeIsNullAndActiveTrue();
+
+  boolean existsByVehicleTypeAndActiveTrueAndIdNot(VehicleType vehicleType, Long id);
+
+  boolean existsByVehicleTypeIsNullAndActiveTrueAndIdNot(Long id);
 
   List<Tariff> findByActiveTrueOrderByFirstHourRateAsc();
 

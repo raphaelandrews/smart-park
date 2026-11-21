@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm, useStore } from "@tanstack/react-form";
 import {
   Add01Icon,
   Delete02Icon,
@@ -9,7 +7,7 @@ import {
   ReceiptTextIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/api/errors";
@@ -19,34 +17,25 @@ import {
   getListTariffsQueryKey,
   useDeactivateTariff,
   useListTariffs,
-  useRegisterTariff,
-  useUpdateTariff,
 } from "@/api/generated";
-import { applyServerFieldErrors } from "@/auth/form-utils";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
-import { FormDialog } from "@/components/form-dialog";
-import { FormError } from "@/components/forms/form-fields";
-import { FormTextField } from "@/components/forms/tanstack-fields";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { RowActionsMenu } from "@/components/row-actions-menu";
 import { StatusBadge } from "@/components/status-badge";
 import { TableActions } from "@/components/table-actions";
+import { TariffFormDialog } from "@/features/tariffs/tariff-form-dialog";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { getVehicleTypeLabel } from "@/lib/labels";
 import type { SortState } from "@/lib/table";
 import { toSortParam } from "@/lib/table";
-import { tariffCreateSchema, tariffUpdateSchema } from "@/lib/validation";
 
 const PAGE_SIZE = 10;
 
-export const Route = createFileRoute("/admin/tariffs")({
-  component: TariffsPage,
-});
-
-function TariffsPage() {
+export function TariffsPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<SortState>({
@@ -56,7 +45,6 @@ function TariffsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TariffResponseDTO | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TariffResponseDTO | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const query = useListTariffs(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
@@ -64,114 +52,17 @@ function TariffsPage() {
   );
   const pageData = query.data?.data;
 
-  const createMutation = useRegisterTariff({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
-  const updateMutation = useUpdateTariff({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
   const deleteMutation = useDeactivateTariff({
     mutation: { meta: { skipGlobalErrorToast: true } },
   });
 
-  const form = useForm({
-    defaultValues: {
-      description: "",
-      firstHourRate: "" as string | number,
-      additionalHourRate: "" as string | number,
-      toleranceMinutes: "" as string | number,
-    },
-    validators: {
-      onChange: tariffCreateSchema,
-      onSubmit: tariffCreateSchema,
-    },
-    listeners: {
-      onChange: () => setFormError(null),
-    },
-    onSubmit: async ({ value, formApi }) => {
-      setFormError(null);
-
-      try {
-        if (editing) {
-          const parsed = tariffUpdateSchema.safeParse(value);
-          if (!parsed.success) {
-            return;
-          }
-          await updateMutation.mutateAsync({
-            id: editing.id as number,
-            data: parsed.data,
-          });
-          toast.success("Tarifa atualizada.");
-          setDialogOpen(false);
-          await invalidate(editing.id);
-          return;
-        }
-
-        const parsed = tariffCreateSchema.safeParse(value);
-        if (!parsed.success) {
-          return;
-        }
-        await createMutation.mutateAsync({ data: parsed.data });
-        toast.success("Tarifa cadastrada.");
-        setDialogOpen(false);
-        setPage(0);
-        await invalidate();
-      } catch (error) {
-        applyServerFieldErrors(formApi, error);
-        setFormError(getErrorMessage(error));
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (!dialogOpen) {
-      return;
-    }
-    form.reset(
-      editing
-        ? {
-            description: editing.description ?? "",
-            firstHourRate: editing.firstHourRate !== undefined ? String(editing.firstHourRate) : "",
-            additionalHourRate:
-              editing.additionalHourRate !== undefined ? String(editing.additionalHourRate) : "",
-            toleranceMinutes:
-              editing.toleranceMinutes !== undefined ? String(editing.toleranceMinutes) : "",
-          }
-        : {
-            description: "",
-            firstHourRate: "",
-            additionalHourRate: "",
-            toleranceMinutes: "",
-          },
-    );
-  }, [dialogOpen, editing, form]);
-
-  const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
-  const isSubmitting = formSubmitting || createMutation.isPending || updateMutation.isPending;
-
   function openCreate() {
     setEditing(null);
-    form.reset({
-      description: "",
-      firstHourRate: "",
-      additionalHourRate: "",
-      toleranceMinutes: "",
-    });
-    setFormError(null);
     setDialogOpen(true);
   }
 
   function openEdit(tariff: TariffResponseDTO) {
     setEditing(tariff);
-    form.reset({
-      description: tariff.description ?? "",
-      firstHourRate: tariff.firstHourRate !== undefined ? String(tariff.firstHourRate) : "",
-      additionalHourRate:
-        tariff.additionalHourRate !== undefined ? String(tariff.additionalHourRate) : "",
-      toleranceMinutes:
-        tariff.toleranceMinutes !== undefined ? String(tariff.toleranceMinutes) : "",
-    });
-    setFormError(null);
     setDialogOpen(true);
   }
 
@@ -210,6 +101,12 @@ function TariffsPage() {
           <span className="font-medium">{tariff.description ?? "—"}</span>
         </div>
       ),
+    },
+    {
+      id: "vehicleType",
+      header: "Tipo de veículo",
+      sortField: "vehicleType",
+      cell: (tariff) => (tariff.vehicleType ? getVehicleTypeLabel(tariff.vehicleType) : "Padrão"),
     },
     {
       id: "firstHourRate",
@@ -261,7 +158,7 @@ function TariffsPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Tarifas"
-        description="Valores de primeira hora, hora adicional e tolerância."
+        description="Valores por tipo de veículo. A tarifa sem tipo é o padrão."
         actions={
           <Button onClick={openCreate}>
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
@@ -312,8 +209,13 @@ function TariffsPage() {
                   1ª hora · +{formatCurrency(tariff.additionalHourRate)}/h
                 </p>
                 <div className="mt-3 flex items-end justify-between gap-3">
-                  <span title={`Tolerância de ${tariff.toleranceMinutes ?? 0} minutos`}>
-                    <StatusBadge tone="neutral">{tariff.toleranceMinutes ?? 0} min</StatusBadge>
+                  <span className="flex items-center gap-1.5">
+                    <StatusBadge tone="info">
+                      {tariff.vehicleType ? getVehicleTypeLabel(tariff.vehicleType) : "Padrão"}
+                    </StatusBadge>
+                    <span title={`Tolerância de ${tariff.toleranceMinutes ?? 0} minutos`}>
+                      <StatusBadge tone="neutral">{tariff.toleranceMinutes ?? 0} min</StatusBadge>
+                    </span>
                   </span>
                   <span className="shrink-0 text-base leading-6 font-medium tabular-nums">
                     {formatCurrency(tariff.firstHourRate)}
@@ -324,7 +226,7 @@ function TariffsPage() {
           )}
           emptyIcon={<HugeiconsIcon icon={ReceiptTextIcon} strokeWidth={2} className="size-5" />}
           emptyTitle="Nenhuma tarifa cadastrada"
-          emptyDescription="Cadastre a primeira tarifa para permitir a abertura de tickets."
+          emptyDescription="Cadastre uma tarifa padrão para permitir a abertura de tickets."
           footer={
             <Pagination
               page={page}
@@ -338,77 +240,12 @@ function TariffsPage() {
         />
       </section>
 
-      <FormDialog
+      <TariffFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={editing ? "Editar tarifa" : "Nova tarifa"}
-        description="Os valores são usados no cálculo manual de pagamentos."
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-        submitLabel={editing ? "Salvar" : "Cadastrar"}
-        isSubmitting={isSubmitting}
-      >
-        <FormError message={formError} />
-        <form.Field name="description">
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="tariff-description"
-              label="Descrição"
-              placeholder="Ex.: Tarifa padrão"
-              maxLength={255}
-            />
-          )}
-        </form.Field>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <form.Field name="firstHourRate">
-            {(field) => (
-              <FormTextField
-                field={field}
-                id="tariff-first-hour"
-                label="Primeira hora (R$)"
-                type="number"
-                placeholder="0,00"
-                inputMode="decimal"
-                min={0}
-                step="0.01"
-              />
-            )}
-          </form.Field>
-          <form.Field name="additionalHourRate">
-            {(field) => (
-              <FormTextField
-                field={field}
-                id="tariff-additional-hour"
-                label="Hora adicional (R$)"
-                type="number"
-                placeholder="0,00"
-                inputMode="decimal"
-                min={0}
-                step="0.01"
-              />
-            )}
-          </form.Field>
-        </div>
-        <form.Field name="toleranceMinutes">
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="tariff-tolerance"
-              label="Tolerância (minutos)"
-              type="number"
-              placeholder="Ex.: 15"
-              inputMode="numeric"
-              min={0}
-              step="1"
-              description="Minutos de tolerância antes de cobrar a primeira hora."
-            />
-          )}
-        </form.Field>
-      </FormDialog>
+        tariff={editing}
+        onCreated={() => setPage(0)}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

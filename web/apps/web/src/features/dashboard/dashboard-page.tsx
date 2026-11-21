@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@web/ui/components/card";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -32,10 +32,6 @@ import {
 } from "@/lib/format";
 import { getOpenTickets, getSpaceStatus, isTicketOpen, isTicketPaid } from "@/lib/parking";
 
-export const Route = createFileRoute("/admin/")({
-  component: DashboardPage,
-});
-
 const quickActions = [
   {
     title: "Abrir ticket",
@@ -63,7 +59,7 @@ const quickActions = [
   },
 ] as const;
 
-function DashboardPage() {
+export function DashboardPage() {
   const spaces = useAllParkingSpaces();
   const tickets = useAllTickets();
   const payments = useAllPayments();

@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm, useStore } from "@tanstack/react-form";
 import {
   Add01Icon,
   Delete02Icon,
@@ -9,38 +7,29 @@ import {
   SquareParkingIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/api/errors";
 import type { ParkingSpaceResponseDTO } from "@/api/generated";
 import {
   getGetParkingSpaceQueryKey,
+  getListAvailableParkingSpacesQueryKey,
   getListParkingSpacesQueryKey,
   useDeactivateParkingSpace,
   useListParkingSpaces,
-  useRegisterParkingSpace,
-  useUpdateParkingSpace,
 } from "@/api/generated";
-import { useAllParkingSpaceTypes, useAllTickets } from "@/api/lookups";
-import { applyServerFieldErrors } from "@/auth/form-utils";
+import { useAllTickets } from "@/api/lookups";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
-import { FormDialog } from "@/components/form-dialog";
-import { FormError } from "@/components/forms/form-fields";
-import {
-  FormCheckboxField,
-  FormSelectField,
-  FormTextAreaField,
-  FormTextField,
-} from "@/components/forms/tanstack-fields";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { RowActionsMenu } from "@/components/row-actions-menu";
 import { StatusBadge } from "@/components/status-badge";
 import { TableActions } from "@/components/table-actions";
+import { ParkingSpaceFormDialog } from "@/features/parking-spaces/parking-space-form-dialog";
 import { formatCompactDateTime, formatDateTime } from "@/lib/format";
 import {
   PARKING_SPACE_STATUS_LABEL,
@@ -50,11 +39,6 @@ import {
 } from "@/lib/parking";
 import type { SortState } from "@/lib/table";
 import { toSortParam } from "@/lib/table";
-import {
-  parkingSpaceCreateSchema,
-  parkingSpaceFormSchema,
-  parkingSpaceUpdateSchema,
-} from "@/lib/validation";
 
 const PAGE_SIZE = 10;
 
@@ -64,18 +48,13 @@ const statusTone: Record<ParkingSpaceStatus, "success" | "warning" | "danger"> =
   BLOCKED: "danger",
 };
 
-export const Route = createFileRoute("/admin/parking-spaces")({
-  component: ParkingSpacesPage,
-});
-
-function ParkingSpacesPage() {
+export function ParkingSpacesPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<SortState>({ field: "code", direction: "asc" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ParkingSpaceResponseDTO | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ParkingSpaceResponseDTO | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const query = useListParkingSpaces(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
@@ -83,129 +62,28 @@ function ParkingSpacesPage() {
   );
   const pageData = query.data?.data;
 
-  const spaceTypes = useAllParkingSpaceTypes();
   const tickets = useAllTickets();
   const openTickets = getOpenTickets(tickets.items);
 
-  const createMutation = useRegisterParkingSpace({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
-  const updateMutation = useUpdateParkingSpace({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
   const deleteMutation = useDeactivateParkingSpace({
     mutation: { meta: { skipGlobalErrorToast: true } },
   });
 
-  const typeOptions = spaceTypes.items.flatMap((type) =>
-    type.id !== undefined && type.name ? [{ value: String(type.id), label: type.name }] : [],
-  );
-
-  const form = useForm({
-    defaultValues: {
-      code: "",
-      parkingSpaceTypeId: "" as string | number,
-      blocked: false,
-      blockingReason: "",
-    },
-    validators: {
-      onChange: parkingSpaceFormSchema,
-      onSubmit: parkingSpaceFormSchema,
-    },
-    listeners: {
-      onChange: () => setFormError(null),
-    },
-    onSubmit: async ({ value, formApi }) => {
-      setFormError(null);
-      const normalized = {
-        ...value,
-        blockingReason: value.blocked ? value.blockingReason : "",
-      };
-
-      try {
-        if (editing) {
-          const parsed = parkingSpaceUpdateSchema.safeParse(normalized);
-          if (!parsed.success) {
-            return;
-          }
-          await updateMutation.mutateAsync({
-            id: editing.id as number,
-            data: parsed.data,
-          });
-          toast.success("Vaga atualizada.");
-          setDialogOpen(false);
-          await invalidate(editing.id);
-          return;
-        }
-
-        const parsed = parkingSpaceCreateSchema.safeParse(normalized);
-        if (!parsed.success) {
-          return;
-        }
-        await createMutation.mutateAsync({ data: parsed.data });
-        toast.success("Vaga cadastrada.");
-        setDialogOpen(false);
-        setPage(0);
-        await invalidate();
-      } catch (error) {
-        applyServerFieldErrors(formApi, error);
-        setFormError(getErrorMessage(error));
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (!dialogOpen) {
-      return;
-    }
-    form.reset(
-      editing
-        ? {
-            code: editing.code ?? "",
-            parkingSpaceTypeId:
-              editing.parkingSpaceTypeId !== undefined ? String(editing.parkingSpaceTypeId) : "",
-            blocked: Boolean(editing.blocked),
-            blockingReason: editing.blockingReason ?? "",
-          }
-        : {
-            code: "",
-            parkingSpaceTypeId: "",
-            blocked: false,
-            blockingReason: "",
-          },
-    );
-  }, [dialogOpen, editing, form]);
-
-  const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
-  const isSubmitting = formSubmitting || createMutation.isPending || updateMutation.isPending;
-
   function openCreate() {
     setEditing(null);
-    form.reset({
-      code: "",
-      parkingSpaceTypeId: "",
-      blocked: false,
-      blockingReason: "",
-    });
-    setFormError(null);
     setDialogOpen(true);
   }
 
   function openEdit(space: ParkingSpaceResponseDTO) {
     setEditing(space);
-    form.reset({
-      code: space.code ?? "",
-      parkingSpaceTypeId:
-        space.parkingSpaceTypeId !== undefined ? String(space.parkingSpaceTypeId) : "",
-      blocked: Boolean(space.blocked),
-      blockingReason: space.blockingReason ?? "",
-    });
-    setFormError(null);
     setDialogOpen(true);
   }
 
   async function invalidate(spaceId?: number) {
-    await queryClient.invalidateQueries({ queryKey: getListParkingSpacesQueryKey() });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getListParkingSpacesQueryKey() }),
+      queryClient.invalidateQueries({ queryKey: getListAvailableParkingSpacesQueryKey() }),
+    ]);
     if (spaceId !== undefined) {
       await queryClient.invalidateQueries({
         queryKey: getGetParkingSpaceQueryKey(spaceId),
@@ -372,78 +250,12 @@ function ParkingSpacesPage() {
         />
       </section>
 
-      <FormDialog
+      <ParkingSpaceFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={editing ? "Editar vaga" : "Nova vaga"}
-        description={
-          editing
-            ? "O código da vaga não pode ser alterado."
-            : "Informe o código, o tipo e o estado inicial da vaga."
-        }
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-        submitLabel={editing ? "Salvar" : "Cadastrar"}
-        isSubmitting={isSubmitting}
-      >
-        <FormError message={formError} />
-        <form.Field name="code">
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="space-code"
-              label="Código"
-              placeholder="Ex.: A1"
-              autoComplete="off"
-              maxLength={20}
-              transformValue={(value) => value.toUpperCase()}
-              disabled={Boolean(editing)}
-              description={editing ? "O código da vaga não pode ser alterado." : undefined}
-            />
-          )}
-        </form.Field>
-        <form.Field name="parkingSpaceTypeId">
-          {(field) => (
-            <FormSelectField
-              field={field}
-              id="space-type"
-              label="Tipo de vaga"
-              options={typeOptions}
-              placeholder={spaceTypes.query.isPending ? "Carregando tipos..." : "Selecione o tipo"}
-            />
-          )}
-        </form.Field>
-        <form.Field name="blocked">
-          {(field) => (
-            <FormCheckboxField
-              field={field}
-              id="space-blocked"
-              label="Vaga bloqueada"
-              description="Vagas bloqueadas não podem receber novos tickets."
-            />
-          )}
-        </form.Field>
-        <form.Subscribe selector={(state) => state.values.blocked}>
-          {(blocked) =>
-            blocked ? (
-              <form.Field name="blockingReason">
-                {(field) => (
-                  <FormTextAreaField
-                    field={field}
-                    id="space-blocking-reason"
-                    label="Motivo do bloqueio"
-                    placeholder="Ex.: Manutenção no piso"
-                    maxLength={255}
-                  />
-                )}
-              </form.Field>
-            ) : null
-          }
-        </form.Subscribe>
-      </FormDialog>
+        space={editing}
+        onCreated={() => setPage(0)}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

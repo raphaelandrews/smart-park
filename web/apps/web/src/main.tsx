@@ -8,10 +8,12 @@ import { routeTree } from "./routeTree.gen";
 
 const router = createRouter({
   routeTree,
+  context: { queryClient },
   defaultPreload: "intent",
+  // React Query owns caching; Router loaders should always run.
+  defaultPreloadStaleTime: 0,
   scrollRestoration: true,
   defaultPendingComponent: () => <Loader />,
-  context: {},
 });
 
 declare module "@tanstack/react-router" {

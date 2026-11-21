@@ -1,4 +1,5 @@
 import { HeadContent, Link, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@web/ui/components/button";
@@ -10,7 +11,9 @@ import { AuthProvider } from "@/auth/auth-context";
 
 import "../index.css";
 
-export interface RouterAppContext {}
+export interface RouterAppContext {
+  queryClient: QueryClient;
+}
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
   component: RootComponent,

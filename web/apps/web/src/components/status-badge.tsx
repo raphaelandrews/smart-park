@@ -1,3 +1,4 @@
+import { Badge } from "@web/ui/components/badge";
 import { cn } from "@web/ui/lib/utils";
 import type { ReactNode } from "react";
 
@@ -20,14 +21,15 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ tone = "neutral", children, className }: StatusBadgeProps) {
   return (
-    <span
+    <Badge
+      variant="outline"
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full border px-3 py-0.5 text-xs leading-none font-medium whitespace-nowrap tabular-nums",
+        "h-6 gap-1 rounded-full px-3 py-0.5 text-xs leading-none font-medium tabular-nums",
         toneClasses[tone],
         className,
       )}
     >
       {children}
-    </span>
+    </Badge>
   );
 }

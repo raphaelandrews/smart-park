@@ -116,19 +116,3 @@ export function formatDurationMinutes(minutes: number | null | undefined): strin
   }
   return `${remainingMinutes}min`;
 }
-
-export function formatDuration(
-  start: string | null | undefined,
-  end: string | null | undefined,
-): string {
-  return formatDurationMinutes(getDurationMinutes(start, end));
-}
-
-/** Formats a Date for an `<input type="datetime-local">` (browser local timezone). */
-export function toDateTimeLocalValue(date: Date = new Date()): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return (
-    [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join("-") +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
-  );
-}

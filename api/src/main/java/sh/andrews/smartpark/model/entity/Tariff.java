@@ -7,6 +7,8 @@ import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import sh.andrews.smartpark.model.enums.VehicleType;
 
 @Getter
 @Setter
@@ -46,6 +49,10 @@ public class Tariff {
 
   @Column(name = "toleranceMinutes", nullable = false)
   private Short toleranceMinutes;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "vehicleType", length = 20)
+  private VehicleType vehicleType;
 
   @Column(name = "active", nullable = false)
   private Boolean active = true;

@@ -1,10 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm, useStore } from "@tanstack/react-form";
 import { Add01Icon, Car01Icon, Delete02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/api/errors";
@@ -14,47 +12,31 @@ import {
   getListVehiclesQueryKey,
   useDeactivateVehicle,
   useListVehicles,
-  useRegisterVehicle,
-  useUpdateVehicle,
 } from "@/api/generated";
-import { applyServerFieldErrors } from "@/auth/form-utils";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
-import { FormDialog } from "@/components/form-dialog";
-import { FormError } from "@/components/forms/form-fields";
-import { FormSelectField, FormTextField } from "@/components/forms/tanstack-fields";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { RowActionsMenu } from "@/components/row-actions-menu";
 import { StatusBadge } from "@/components/status-badge";
 import { TableActions } from "@/components/table-actions";
+import { VehicleFormDialog } from "@/features/vehicles/vehicle-form-dialog";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { VEHICLE_TYPE_LABEL, getVehicleTypeLabel } from "@/lib/labels";
+import { getVehicleTypeLabel } from "@/lib/labels";
 import type { SortState } from "@/lib/table";
 import { toSortParam } from "@/lib/table";
-import { licensePlateSchema, vehicleCreateSchema, vehicleUpdateSchema } from "@/lib/validation";
 
 const PAGE_SIZE = 10;
 
-const vehicleTypeOptions = Object.entries(VEHICLE_TYPE_LABEL).map(([value, label]) => ({
-  value,
-  label,
-}));
-
-export const Route = createFileRoute("/admin/vehicles")({
-  component: VehiclesPage,
-});
-
-function VehiclesPage() {
+export function VehiclesPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<SortState>({ field: "model", direction: "asc" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<VehicleResponseDTO | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VehicleResponseDTO | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const query = useListVehicles(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
@@ -62,106 +44,17 @@ function VehiclesPage() {
   );
   const pageData = query.data?.data;
 
-  const createMutation = useRegisterVehicle({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
-  const updateMutation = useUpdateVehicle({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
   const deleteMutation = useDeactivateVehicle({
     mutation: { meta: { skipGlobalErrorToast: true } },
   });
 
-  const form = useForm({
-    defaultValues: {
-      licensePlate: "",
-      model: "",
-      color: "",
-      vehicleType: "CAR" as NonNullable<VehicleResponseDTO["vehicleType"]>,
-    },
-    listeners: {
-      onChange: () => setFormError(null),
-    },
-    onSubmit: async ({ value, formApi }) => {
-      setFormError(null);
-
-      try {
-        if (editing) {
-          const parsed = vehicleUpdateSchema.safeParse(value);
-          if (!parsed.success) {
-            return;
-          }
-          await updateMutation.mutateAsync({
-            id: editing.id as number,
-            data: parsed.data,
-          });
-          toast.success("Veículo atualizado.");
-          setDialogOpen(false);
-          await invalidate(editing.id);
-          return;
-        }
-
-        const parsed = vehicleCreateSchema.safeParse(value);
-        if (!parsed.success) {
-          return;
-        }
-        await createMutation.mutateAsync({ data: parsed.data });
-        toast.success("Veículo cadastrado.");
-        setDialogOpen(false);
-        setPage(0);
-        await invalidate();
-      } catch (error) {
-        applyServerFieldErrors(formApi, error);
-        setFormError(getErrorMessage(error));
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (!dialogOpen) {
-      return;
-    }
-    form.reset(
-      editing
-        ? {
-            licensePlate: editing.licensePlate ?? "",
-            model: editing.model ?? "",
-            color: editing.color ?? "",
-            vehicleType: editing.vehicleType ?? "CAR",
-          }
-        : {
-            licensePlate: "",
-            model: "",
-            color: "",
-            vehicleType: "CAR",
-          },
-    );
-  }, [dialogOpen, editing, form]);
-
-  const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
-  const isSubmitting = formSubmitting || createMutation.isPending || updateMutation.isPending;
-
   function openCreate() {
     setEditing(null);
-    form.reset({
-      licensePlate: "",
-      model: "",
-      color: "",
-      vehicleType: "CAR",
-    });
-    setFormError(null);
     setDialogOpen(true);
   }
 
   function openEdit(vehicle: VehicleResponseDTO) {
     setEditing(vehicle);
-    form.reset({
-      licensePlate: vehicle.licensePlate ?? "",
-      model: vehicle.model ?? "",
-      color: vehicle.color ?? "",
-      vehicleType: vehicle.vehicleType ?? "CAR",
-    });
-    setFormError(null);
     setDialogOpen(true);
   }
 
@@ -318,105 +211,7 @@ function VehiclesPage() {
         />
       </section>
 
-      <FormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        title={editing ? "Editar veículo" : "Novo veículo"}
-        description={
-          editing
-            ? "A placa não pode ser alterada depois do cadastro."
-            : "Informe a placa e os dados do veículo."
-        }
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-        submitLabel={editing ? "Salvar" : "Cadastrar"}
-        isSubmitting={isSubmitting}
-      >
-        <FormError message={formError} />
-        <form.Field
-          name="licensePlate"
-          validators={
-            editing
-              ? undefined
-              : {
-                  onChange: licensePlateSchema,
-                  onSubmit: licensePlateSchema,
-                }
-          }
-        >
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="vehicle-plate"
-              label="Placa"
-              placeholder="ABC1D23"
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              maxLength={7}
-              transformValue={(value) => value.toUpperCase().replace(/-/g, "")}
-              disabled={Boolean(editing)}
-              description={
-                editing ? "A placa não pode ser alterada." : "Use o formato ABC1234 ou ABC1D23."
-              }
-            />
-          )}
-        </form.Field>
-        <form.Field
-          name="model"
-          validators={{
-            onChange: vehicleCreateSchema.shape.model,
-            onSubmit: vehicleCreateSchema.shape.model,
-          }}
-        >
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="vehicle-model"
-              label="Modelo"
-              placeholder="Ex.: HB20"
-              maxLength={100}
-            />
-          )}
-        </form.Field>
-        <form.Field
-          name="color"
-          validators={{
-            onChange: vehicleCreateSchema.shape.color,
-            onSubmit: vehicleCreateSchema.shape.color,
-          }}
-        >
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="vehicle-color"
-              label="Cor"
-              placeholder="Ex.: Prata"
-              maxLength={50}
-            />
-          )}
-        </form.Field>
-        <form.Field
-          name="vehicleType"
-          validators={{
-            onChange: vehicleCreateSchema.shape.vehicleType,
-            onSubmit: vehicleCreateSchema.shape.vehicleType,
-          }}
-        >
-          {(field) => (
-            <FormSelectField
-              field={field}
-              id="vehicle-type"
-              label="Tipo"
-              options={vehicleTypeOptions}
-              placeholder="Selecione o tipo"
-            />
-          )}
-        </form.Field>
-      </FormDialog>
+      <VehicleFormDialog open={dialogOpen} onOpenChange={setDialogOpen} vehicle={editing} />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

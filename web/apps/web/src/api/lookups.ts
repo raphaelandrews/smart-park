@@ -13,7 +13,7 @@ import {
  * "all active" or search endpoint. If `hasMore` is true, the collection exceeds this
  * size and the screen should use a paged combobox or "load more".
  */
-export const LOOKUP_PAGE_SIZE = 200;
+const LOOKUP_PAGE_SIZE = 200;
 
 const lookupParams = { size: LOOKUP_PAGE_SIZE } as const;
 

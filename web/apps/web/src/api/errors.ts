@@ -152,7 +152,3 @@ export function getFieldErrors(error: unknown): Record<string, string> {
 
   return Object.fromEntries(error.fieldErrors.map((field) => [field.fieldName, field.message]));
 }
-
-export function getErrorStatus(error: unknown): number | undefined {
-  return isApiError(error) ? error.status : undefined;
-}

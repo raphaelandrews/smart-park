@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 import sh.andrews.smartpark.model.entity.Tariff;
+import sh.andrews.smartpark.model.enums.VehicleType;
 
 @Getter
 @AllArgsConstructor
@@ -18,6 +19,7 @@ public class TariffResponseDTO {
   private BigDecimal firstHourRate;
   private BigDecimal additionalHourRate;
   private Short toleranceMinutes;
+  private VehicleType vehicleType;
   private Boolean active;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
@@ -25,7 +27,7 @@ public class TariffResponseDTO {
   public static TariffResponseDTO fromEntity(Tariff tariff) {
     return new TariffResponseDTO(tariff.getId(), tariff.getDescription(),
         tariff.getFirstHourRate(), tariff.getAdditionalHourRate(),
-        tariff.getToleranceMinutes(), tariff.getActive(), tariff.getCreatedAt(),
-        tariff.getUpdatedAt());
+        tariff.getToleranceMinutes(), tariff.getVehicleType(), tariff.getActive(),
+        tariff.getCreatedAt(), tariff.getUpdatedAt());
   }
 }

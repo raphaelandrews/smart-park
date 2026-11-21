@@ -1,4 +1,13 @@
+import { Button } from "@web/ui/components/button";
 import { Skeleton } from "@web/ui/components/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@web/ui/components/table";
 import { cn } from "@web/ui/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowDown01Icon, ArrowUp01Icon, UnfoldMoreIcon } from "@hugeicons/core-free-icons";
@@ -94,10 +103,10 @@ export function DataTable<T>({
                 : rows.map((row) => <div key={getRowId(row)}>{mobileRow(row)}</div>)}
             </div>
           ) : null}
-          <div className={cn("overflow-x-auto", mobileRow && "hidden md:block")}>
-            <table className="w-full border-collapse text-left text-sm" aria-label={tableLabel}>
-              <thead>
-                <tr className="border-b border-border">
+          <div className={cn(mobileRow && "hidden md:block")}>
+            <Table className="border-collapse text-left" aria-label={tableLabel}>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
                   {columns.map((column) => {
                     const field = column.sortField ?? column.id;
                     const isSortable = Boolean(onSortChange) && column.sortable !== false;
@@ -111,7 +120,7 @@ export function DataTable<T>({
                           : UnfoldMoreIcon;
 
                     return (
-                      <th
+                      <TableHead
                         key={column.id}
                         scope="col"
                         aria-sort={
@@ -124,13 +133,15 @@ export function DataTable<T>({
                               : undefined
                         }
                         className={cn(
-                          "px-4 py-3 text-sm font-medium whitespace-nowrap text-muted-foreground",
+                          "h-auto px-4 py-3 text-sm font-medium whitespace-nowrap text-muted-foreground",
                           column.headerClassName,
                         )}
                       >
                         {isSortable ? (
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
                               if (!onSortChange) {
                                 return;
@@ -140,7 +151,7 @@ export function DataTable<T>({
                                 direction: isActive && direction === "asc" ? "desc" : "asc",
                               });
                             }}
-                            className="inline-flex items-center gap-1 transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring/50 focus-visible:outline-none"
+                            className="-ml-2 h-8 gap-1 px-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                           >
                             {column.header}
                             <HugeiconsIcon
@@ -148,43 +159,40 @@ export function DataTable<T>({
                               strokeWidth={2}
                               className={cn("size-3", isActive ? "opacity-100" : "opacity-40")}
                             />
-                          </button>
+                          </Button>
                         ) : (
                           column.header
                         )}
-                      </th>
+                      </TableHead>
                     );
                   })}
-                </tr>
-              </thead>
-              <tbody aria-busy={isLoading}>
+                </TableRow>
+              </TableHeader>
+              <TableBody aria-busy={isLoading}>
                 {isLoading
                   ? Array.from({ length: skeletonRows }).map((_, rowIndex) => (
-                      <tr key={rowIndex} className="border-b border-border last:border-b-0">
+                      <TableRow key={rowIndex} className="border-border">
                         {columns.map((column) => (
-                          <td key={column.id} className={cn("px-4 py-4", column.className)}>
+                          <TableCell key={column.id} className={cn("px-4 py-4", column.className)}>
                             <Skeleton className="h-4 w-full max-w-40" />
-                          </td>
+                          </TableCell>
                         ))}
-                      </tr>
+                      </TableRow>
                     ))
                   : rows.map((row) => (
-                      <tr
-                        key={getRowId(row)}
-                        className="border-b border-border transition-colors last:border-b-0 hover:bg-secondary/50"
-                      >
+                      <TableRow key={getRowId(row)} className="border-border hover:bg-secondary/50">
                         {columns.map((column) => (
-                          <td
+                          <TableCell
                             key={column.id}
                             className={cn("px-4 py-4 align-middle", column.className)}
                           >
                             {column.cell(row)}
-                          </td>
+                          </TableCell>
                         ))}
-                      </tr>
+                      </TableRow>
                     ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </>
       )}

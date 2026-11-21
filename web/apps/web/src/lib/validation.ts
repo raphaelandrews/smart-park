@@ -168,11 +168,16 @@ export const parkingSpaceFormSchema = z
 
 // Tariffs
 
+const optionalVehicleType = z
+  .union([z.enum(["CAR", "MOTORCYCLE", "TRUCK", "BUS"]), z.literal("")])
+  .transform((value) => (value === "" ? null : value));
+
 export const tariffCreateSchema = z.object({
   description: requiredText("A descrição", 255),
   firstHourRate: moneyInput("O valor da primeira hora"),
   additionalHourRate: moneyInput("O valor da hora adicional"),
   toleranceMinutes: minutesInput("Os minutos de tolerância"),
+  vehicleType: optionalVehicleType,
 });
 
 export const tariffUpdateSchema = tariffCreateSchema;
@@ -182,7 +187,6 @@ export const tariffUpdateSchema = tariffCreateSchema;
 export const ticketCreateSchema = z.object({
   vehicleId: idInput("O veículo"),
   parkingSpaceId: idInput("A vaga"),
-  tariffId: idInput("A tarifa"),
 });
 
 // Payments
@@ -222,16 +226,3 @@ export const registerSchema = z
     message: "As senhas não coincidem",
     path: ["confirmPassword"],
   });
-
-export type VehicleCreateInput = z.infer<typeof vehicleCreateSchema>;
-export type VehicleUpdateInput = z.infer<typeof vehicleUpdateSchema>;
-export type ParkingSpaceTypeCreateInput = z.infer<typeof parkingSpaceTypeCreateSchema>;
-export type ParkingSpaceTypeUpdateInput = z.infer<typeof parkingSpaceTypeUpdateSchema>;
-export type ParkingSpaceCreateInput = z.infer<typeof parkingSpaceCreateSchema>;
-export type ParkingSpaceUpdateInput = z.infer<typeof parkingSpaceUpdateSchema>;
-export type TariffCreateInput = z.infer<typeof tariffCreateSchema>;
-export type TariffUpdateInput = z.infer<typeof tariffUpdateSchema>;
-export type TicketCreateInput = z.infer<typeof ticketCreateSchema>;
-export type PaymentCreateInput = z.infer<typeof paymentCreateSchema>;
-export type LoginInput = z.infer<typeof loginSchema>;
-export type RegisterInput = z.infer<typeof registerSchema>;

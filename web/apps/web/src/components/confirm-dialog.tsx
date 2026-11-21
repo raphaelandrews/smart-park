@@ -1,15 +1,16 @@
-import { Button } from "@web/ui/components/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@web/ui/components/dialog";
-import type { ReactNode } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@web/ui/components/alert-dialog";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import type { ReactNode } from "react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -35,23 +36,15 @@ export function ConfirmDialog({
   destructive = false,
 }: ConfirmDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal={isPending}>
-      <DialogContent showCloseButton={!isPending}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending}
-            onClick={() => onOpenChange(false)}
-          >
-            {cancelLabel}
-          </Button>
-          <Button
-            type="button"
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogAction
             variant={destructive ? "destructive" : "ink"}
             disabled={isPending}
             onClick={onConfirm}
@@ -60,9 +53,9 @@ export function ConfirmDialog({
               <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="animate-spin" />
             ) : null}
             {confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

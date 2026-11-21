@@ -17,17 +17,13 @@ import sh.andrews.smartpark.model.entity.Vehicle;
 @NoArgsConstructor
 public class TicketRequestDTO {
 
-  @NotNull(message = " O veículo é obrigatório")
+  @NotNull(message = "O veículo é obrigatório")
   @Positive(message = "O ID do veículo deve ser positivo")
   private Long vehicleId;
 
   @NotNull(message = "A vaga é obrigatória")
   @Positive(message = "O ID da vaga deve ser positivo")
   private Long parkingSpaceId;
-
-  @NotNull(message = "A tarifa é obrigatória")
-  @Positive(message = "O ID da tarifa deve ser positivo")
-  private Long tariffId;
 
   public Ticket toEntity(Vehicle vehicle, ParkingSpace parkingSpace, Tariff tariff) {
     Ticket ticket = new Ticket();

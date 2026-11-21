@@ -1,55 +1,32 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
-import { useQueryClient } from "@tanstack/react-query";
-import { useForm, useStore } from "@tanstack/react-form";
 import { Add01Icon, CreditCardIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useMemo, useState } from "react";
 
-import { getErrorMessage } from "@/api/errors";
 import type { PaymentResponseDTO } from "@/api/generated";
-import {
-  getListAvailableParkingSpacesQueryKey,
-  getListPaymentsQueryKey,
-  getListTicketsQueryKey,
-  useGetTicketQuote,
-  useListPayments,
-  useRegisterPayment,
-} from "@/api/generated";
+import { useListPayments } from "@/api/generated";
 import { toLookupMap, useAllPayments, useAllTickets } from "@/api/lookups";
-import { applyServerFieldErrors } from "@/auth/form-utils";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
-import { FormDialog } from "@/components/form-dialog";
-import { FormError } from "@/components/forms/form-fields";
-import { FormSelectField } from "@/components/forms/tanstack-fields";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
-import { PaymentQuote } from "@/components/payment-quote";
+import { PaymentDialog } from "@/features/payments/payment-dialog";
 import { StatusBadge } from "@/components/status-badge";
 import { formatCompactDateTime, formatCurrency, formatDateTime } from "@/lib/format";
 import { isTicketOpen } from "@/lib/parking";
 import type { SortState } from "@/lib/table";
 import { toSortParam } from "@/lib/table";
-import { paymentCreateSchema } from "@/lib/validation";
 
 const PAGE_SIZE = 10;
 
-export const Route = createFileRoute("/admin/payments")({
-  component: PaymentsPage,
-});
-
-function PaymentsPage() {
-  const queryClient = useQueryClient();
+export function PaymentsPage() {
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<SortState>({
     field: "paymentDateTime",
     direction: "desc",
   });
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const query = useListPayments(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
@@ -72,16 +49,12 @@ function PaymentsPage() {
     [allPayments.items],
   );
 
-  const createMutation = useRegisterPayment({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
-
-  const ticketOptions = useMemo(
+  const unpaidTickets = useMemo(
     () =>
       tickets.items
         .filter(
           (ticket) =>
-            ticket.id !== undefined && !paidTicketIds.has(ticket.id) && ticket.active !== false,
+            ticket.id !== undefined && ticket.active !== false && !paidTicketIds.has(ticket.id),
         )
         .sort((first, second) => {
           const openDelta = Number(isTicketOpen(second)) - Number(isTicketOpen(first));
@@ -89,92 +62,11 @@ function PaymentsPage() {
             return openDelta;
           }
           return (second.entryTime ?? "").localeCompare(first.entryTime ?? "");
-        })
-        .flatMap((ticket) =>
-          ticket.id === undefined
-            ? []
-            : [
-                {
-                  value: String(ticket.id),
-                  label: `#${ticket.id} · ${ticket.licensePlate ?? "—"} · ${
-                    ticket.parkingSpaceCode ?? "—"
-                  }${isTicketOpen(ticket) ? " · em andamento" : ""}`,
-                },
-              ],
-        ),
+        }),
     [tickets.items, paidTicketIds],
   );
 
-  async function invalidate() {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getListTicketsQueryKey() }),
-      queryClient.invalidateQueries({
-        queryKey: getListAvailableParkingSpacesQueryKey(),
-      }),
-    ]);
-  }
-
-  const form = useForm({
-    defaultValues: {
-      ticketId: "" as string | number,
-    },
-    validators: {
-      onChange: paymentCreateSchema,
-      onSubmit: paymentCreateSchema,
-    },
-    listeners: {
-      onChange: () => setFormError(null),
-    },
-    onSubmit: async ({ value, formApi }) => {
-      setFormError(null);
-      const parsed = paymentCreateSchema.safeParse(value);
-      if (!parsed.success) {
-        return;
-      }
-
-      try {
-        const response = await createMutation.mutateAsync({ data: parsed.data });
-        const amount = response.data?.amount;
-        toast.success(
-          amount !== undefined
-            ? `Pagamento de ${formatCurrency(amount)} registrado.`
-            : "Pagamento registrado.",
-        );
-        setDialogOpen(false);
-        setPage(0);
-        await invalidate();
-      } catch (error) {
-        applyServerFieldErrors(formApi, error);
-        setFormError(getErrorMessage(error));
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (!dialogOpen) {
-      return;
-    }
-    form.reset({ ticketId: "" });
-  }, [dialogOpen, form]);
-
-  const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
-  const isSubmitting = formSubmitting || createMutation.isPending;
-  const formTicketId = useStore(form.store, (state) => state.values.ticketId);
-  const quoteTicketId =
-    formTicketId === "" || formTicketId === undefined ? null : Number(formTicketId);
-  const quoteQuery = useGetTicketQuote(quoteTicketId ?? 0, {
-    query: {
-      enabled: quoteTicketId !== null && !Number.isNaN(quoteTicketId),
-      retry: false,
-      meta: { skipGlobalErrorToast: true },
-    },
-  });
-  const quote = quoteQuery.data?.data;
-
   function openCreate() {
-    form.reset({ ticketId: "" });
-    setFormError(null);
     setDialogOpen(true);
   }
 
@@ -310,40 +202,12 @@ function PaymentsPage() {
         />
       </section>
 
-      <FormDialog
+      <PaymentDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title="Novo pagamento"
-        description="O pagamento encerra a sessão e registra o valor calculado pelo servidor. Um ticket aceita apenas um pagamento."
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-        submitLabel="Registrar"
-        submitVariant="ink"
-        isSubmitting={isSubmitting}
-        submitDisabled={quoteQuery.isFetching || !quote}
-      >
-        <FormError message={formError} />
-        <form.Field name="ticketId">
-          {(field) => (
-            <FormSelectField
-              field={field}
-              id="payment-ticket"
-              label="Ticket"
-              options={ticketOptions}
-              placeholder={tickets.query.isPending ? "Carregando tickets..." : "Selecione o ticket"}
-              description={
-                ticketOptions.length === 0
-                  ? "Todos os tickets ativos já possuem pagamento registrado."
-                  : undefined
-              }
-            />
-          )}
-        </form.Field>
-        <PaymentQuote quote={quote} isLoading={quoteQuery.isFetching} error={quoteQuery.error} />
-      </FormDialog>
+        tickets={unpaidTickets}
+        onPaid={() => setPage(0)}
+      />
     </div>
   );
 }

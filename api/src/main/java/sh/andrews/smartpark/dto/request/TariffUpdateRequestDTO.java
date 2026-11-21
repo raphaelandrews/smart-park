@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import sh.andrews.smartpark.model.enums.VehicleType;
 
 @Getter
 @Setter
@@ -36,4 +37,6 @@ public class TariffUpdateRequestDTO {
   @NotNull(message = "Os minutos de tolerância são obrigatórios")
   @PositiveOrZero(message = "Os minutos de tolerância não podem ser negativos")
   private Short toleranceMinutes;
+
+  private VehicleType vehicleType;
 }

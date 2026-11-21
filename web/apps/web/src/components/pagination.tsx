@@ -10,14 +10,11 @@ import {
 } from "@hugeicons/core-free-icons";
 
 interface PaginationProps {
-  /** Zero-based page index, matching the Spring `Page` shape. */
   page: number;
   pageSize: number;
   totalElements: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange?: (pageSize: number) => void;
-  pageSizeOptions?: number[];
   isFetching?: boolean;
 }
 
@@ -27,8 +24,6 @@ export function Pagination({
   totalElements,
   totalPages,
   onPageChange,
-  onPageSizeChange,
-  pageSizeOptions = [10, 20, 50],
   isFetching = false,
 }: PaginationProps) {
   const safeTotalPages = Math.max(1, totalPages);
@@ -45,23 +40,6 @@ export function Pagination({
       </p>
 
       <div className="flex items-center gap-3">
-        {onPageSizeChange ? (
-          <label className="flex items-center gap-2">
-            <span className="whitespace-nowrap">Itens por página</span>
-            <select
-              value={pageSize}
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              className="h-9 rounded-md border border-input bg-background px-2.5 text-sm shadow-none outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60"
-            >
-              {pageSizeOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
         <div className="flex items-center gap-1">
           {isFetching ? (
             <HugeiconsIcon

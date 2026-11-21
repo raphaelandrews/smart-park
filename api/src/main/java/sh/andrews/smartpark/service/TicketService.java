@@ -15,7 +15,6 @@ import sh.andrews.smartpark.model.entity.Tariff;
 import sh.andrews.smartpark.model.entity.Ticket;
 import sh.andrews.smartpark.model.entity.Vehicle;
 import sh.andrews.smartpark.repository.ParkingSpaceRepository;
-import sh.andrews.smartpark.repository.TariffRepository;
 import sh.andrews.smartpark.repository.TicketRepository;
 import sh.andrews.smartpark.repository.VehicleRepository;
 import sh.andrews.smartpark.security.CurrentUserService;
@@ -26,20 +25,20 @@ public class TicketService {
   private final TicketRepository ticketRepository;
   private final VehicleRepository vehicleRepository;
   private final ParkingSpaceRepository parkingSpaceRepository;
-  private final TariffRepository tariffRepository;
+  private final TariffService tariffService;
   private final CurrentUserService currentUserService;
   private final TicketPricingService pricingService;
 
   public TicketService(TicketRepository ticketRepository,
       VehicleRepository vehicleRepository,
       ParkingSpaceRepository parkingSpaceRepository,
-      TariffRepository tariffRepository,
+      TariffService tariffService,
       CurrentUserService currentUserService,
       TicketPricingService pricingService) {
     this.ticketRepository = ticketRepository;
     this.vehicleRepository = vehicleRepository;
     this.parkingSpaceRepository = parkingSpaceRepository;
-    this.tariffRepository = tariffRepository;
+    this.tariffService = tariffService;
     this.currentUserService = currentUserService;
     this.pricingService = pricingService;
   }
@@ -48,7 +47,7 @@ public class TicketService {
   public TicketResponseDTO register(TicketRequestDTO request) {
     Vehicle vehicle = findActiveVehicle(request.getVehicleId());
     ParkingSpace space = findActiveSpace(request.getParkingSpaceId());
-    Tariff tariff = findActiveTariff(request.getTariffId());
+    Tariff tariff = tariffService.resolveForVehicleType(vehicle.getVehicleType());
 
     if (Boolean.TRUE.equals(space.getBlocked())) {
       throw new BusinessRuleException(
@@ -125,11 +124,5 @@ public class TicketService {
     return parkingSpaceRepository.findByIdAndActiveTrue(id)
         .orElseThrow(() -> new ResourceNotFoundException(
             "Vaga " + id + " não encontrada."));
-  }
-
-  private Tariff findActiveTariff(Long id) {
-    return tariffRepository.findByIdAndActiveTrue(id)
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Tarifa " + id + " não encontrada."));
   }
 }

@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import sh.andrews.smartpark.model.entity.Tariff;
+import sh.andrews.smartpark.model.enums.VehicleType;
 
 @Getter
 @Setter
@@ -36,12 +37,15 @@ public class TariffRequestDTO {
   @PositiveOrZero(message = "Os minutos de tolerância não podem ser negativos")
   private Short toleranceMinutes;
 
+  private VehicleType vehicleType;
+
   public Tariff toEntity() {
     Tariff tariff = new Tariff();
     tariff.setDescription(description);
     tariff.setFirstHourRate(firstHourRate);
     tariff.setAdditionalHourRate(additionalHourRate);
     tariff.setToleranceMinutes(toleranceMinutes);
+    tariff.setVehicleType(vehicleType);
     return tariff;
   }
 }

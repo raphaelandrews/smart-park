@@ -90,22 +90,16 @@ export function FormTextAreaField({ field, ...props }: TextAreaFieldProps) {
 type SelectFieldProps = Omit<
   ComponentProps<typeof SelectField>,
   "value" | "onChange" | "onBlur" | "error"
-> & {
-  field: AnyFieldApi;
-  onValueChange?: (value: string) => void;
-};
+> & { field: AnyFieldApi };
 
-export function FormSelectField({ field, onValueChange, ...props }: SelectFieldProps) {
+export function FormSelectField({ field, ...props }: SelectFieldProps) {
   const change = changeField(field);
   return (
     <SelectField
       {...props}
       name={props.name ?? field.name}
       value={String(field.state.value ?? "")}
-      onChange={(value) => {
-        change(value);
-        onValueChange?.(value);
-      }}
+      onChange={(value) => change(value)}
       onBlur={field.handleBlur}
       error={getFieldError(field)}
     />

@@ -1,6 +1,13 @@
 import { Checkbox } from "@web/ui/components/checkbox";
 import { Input } from "@web/ui/components/input";
 import { Label } from "@web/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@web/ui/components/select";
 import { Textarea } from "@web/ui/components/textarea";
 import { Alert02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -176,24 +183,30 @@ export function SelectField({
 }) {
   return (
     <FieldShell id={id} label={label} error={error} description={description}>
-      <select
-        id={id}
+      <Select
         name={name}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
+        items={options}
+        value={value === "" ? null : value}
+        onValueChange={(next) => onChange(next == null ? "" : String(next))}
         disabled={disabled}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-none transition-[color,box-shadow] outline-none hover:border-subtle-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
       >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger
+          id={id}
+          onBlur={onBlur}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className="h-10 w-full bg-background"
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </FieldShell>
   );
 }

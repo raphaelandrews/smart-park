@@ -1,10 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm, useStore } from "@tanstack/react-form";
 import { Add01Icon, Delete02Icon, PencilEdit02Icon, TagsIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/api/errors";
@@ -14,49 +12,30 @@ import {
   getListParkingSpaceTypesQueryKey,
   useDeactivateParkingSpaceType,
   useListParkingSpaceTypes,
-  useRegisterParkingSpaceType,
-  useUpdateParkingSpaceType,
 } from "@/api/generated";
-import { applyServerFieldErrors } from "@/auth/form-utils";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
-import { FormDialog } from "@/components/form-dialog";
-import { FormError } from "@/components/forms/form-fields";
-import {
-  FormCheckboxField,
-  FormTextAreaField,
-  FormTextField,
-} from "@/components/forms/tanstack-fields";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { RowActionsMenu } from "@/components/row-actions-menu";
 import { StatusBadge } from "@/components/status-badge";
 import { TableActions } from "@/components/table-actions";
+import { ParkingSpaceTypeFormDialog } from "@/features/parking-space-types/parking-space-type-form-dialog";
 import { formatCompactDateTime, formatDateTime } from "@/lib/format";
 import type { SortState } from "@/lib/table";
 import { toSortParam } from "@/lib/table";
-import {
-  parkingSpaceTypeCreateSchema,
-  parkingSpaceTypeFormSchema,
-  parkingSpaceTypeUpdateSchema,
-} from "@/lib/validation";
 
 const PAGE_SIZE = 10;
 
-export const Route = createFileRoute("/admin/parking-space-types")({
-  component: ParkingSpaceTypesPage,
-});
-
-function ParkingSpaceTypesPage() {
+export function ParkingSpaceTypesPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<SortState>({ field: "name", direction: "asc" });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ParkingSpaceTypeResponseDTO | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ParkingSpaceTypeResponseDTO | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const query = useListParkingSpaceTypes(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
@@ -64,97 +43,17 @@ function ParkingSpaceTypesPage() {
   );
   const pageData = query.data?.data;
 
-  const createMutation = useRegisterParkingSpaceType({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
-  const updateMutation = useUpdateParkingSpaceType({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
   const deleteMutation = useDeactivateParkingSpaceType({
     mutation: { meta: { skipGlobalErrorToast: true } },
   });
 
-  const form = useForm({
-    defaultValues: {
-      name: "",
-      description: "",
-      requiresCredential: false,
-    },
-    validators: {
-      onChange: parkingSpaceTypeFormSchema,
-      onSubmit: parkingSpaceTypeFormSchema,
-    },
-    listeners: {
-      onChange: () => setFormError(null),
-    },
-    onSubmit: async ({ value, formApi }) => {
-      setFormError(null);
-
-      try {
-        if (editing) {
-          const parsed = parkingSpaceTypeUpdateSchema.safeParse(value);
-          if (!parsed.success) {
-            return;
-          }
-          await updateMutation.mutateAsync({
-            id: editing.id as number,
-            data: parsed.data,
-          });
-          toast.success("Tipo de vaga atualizado.");
-          setDialogOpen(false);
-          await invalidate(editing.id);
-          return;
-        }
-
-        const parsed = parkingSpaceTypeCreateSchema.safeParse(value);
-        if (!parsed.success) {
-          return;
-        }
-        await createMutation.mutateAsync({ data: parsed.data });
-        toast.success("Tipo de vaga cadastrado.");
-        setDialogOpen(false);
-        setPage(0);
-        await invalidate();
-      } catch (error) {
-        applyServerFieldErrors(formApi, error);
-        setFormError(getErrorMessage(error));
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (!dialogOpen) {
-      return;
-    }
-    form.reset(
-      editing
-        ? {
-            name: editing.name ?? "",
-            description: editing.description ?? "",
-            requiresCredential: Boolean(editing.requiresCredential),
-          }
-        : { name: "", description: "", requiresCredential: false },
-    );
-  }, [dialogOpen, editing, form]);
-
-  const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
-  const isSubmitting = formSubmitting || createMutation.isPending || updateMutation.isPending;
-
   function openCreate() {
     setEditing(null);
-    form.reset({ name: "", description: "", requiresCredential: false });
-    setFormError(null);
     setDialogOpen(true);
   }
 
   function openEdit(type: ParkingSpaceTypeResponseDTO) {
     setEditing(type);
-    form.reset({
-      name: type.name ?? "",
-      description: type.description ?? "",
-      requiresCredential: Boolean(type.requiresCredential),
-    });
-    setFormError(null);
     setDialogOpen(true);
   }
 
@@ -311,53 +210,12 @@ function ParkingSpaceTypesPage() {
         />
       </section>
 
-      <FormDialog
+      <ParkingSpaceTypeFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={editing ? "Editar tipo de vaga" : "Novo tipo de vaga"}
-        description="Use nomes curtos e descritivos para facilitar a operação."
-        onSubmit={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void form.handleSubmit();
-        }}
-        submitLabel={editing ? "Salvar" : "Cadastrar"}
-        isSubmitting={isSubmitting}
-      >
-        <FormError message={formError} />
-        <form.Field name="name">
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="type-name"
-              label="Nome"
-              placeholder="Ex.: Coberta"
-              maxLength={100}
-            />
-          )}
-        </form.Field>
-        <form.Field name="description">
-          {(field) => (
-            <FormTextAreaField
-              field={field}
-              id="type-description"
-              label="Descrição"
-              placeholder="Detalhes opcionais sobre este tipo de vaga"
-              maxLength={255}
-            />
-          )}
-        </form.Field>
-        <form.Field name="requiresCredential">
-          {(field) => (
-            <FormCheckboxField
-              field={field}
-              id="type-requires-credential"
-              label="Exige credencial"
-              description="Marque se o acesso a este tipo de vaga exige credencial."
-            />
-          )}
-        </form.Field>
-      </FormDialog>
+        spaceType={editing}
+        onCreated={() => setPage(0)}
+      />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}

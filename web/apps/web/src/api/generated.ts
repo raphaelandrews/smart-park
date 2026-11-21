@@ -67,6 +67,16 @@ export interface VehicleResponseDTO {
   updatedAt?: string;
 }
 
+export type TariffUpdateRequestDTOVehicleType =
+  (typeof TariffUpdateRequestDTOVehicleType)[keyof typeof TariffUpdateRequestDTOVehicleType];
+
+export const TariffUpdateRequestDTOVehicleType = {
+  CAR: "CAR",
+  MOTORCYCLE: "MOTORCYCLE",
+  TRUCK: "TRUCK",
+  BUS: "BUS",
+} as const;
+
 export interface TariffUpdateRequestDTO {
   /**
    * @minLength 0
@@ -79,7 +89,18 @@ export interface TariffUpdateRequestDTO {
   additionalHourRate: number;
   /** @minimum 0 */
   toleranceMinutes: number;
+  vehicleType?: TariffUpdateRequestDTOVehicleType;
 }
+
+export type TariffResponseDTOVehicleType =
+  (typeof TariffResponseDTOVehicleType)[keyof typeof TariffResponseDTOVehicleType];
+
+export const TariffResponseDTOVehicleType = {
+  CAR: "CAR",
+  MOTORCYCLE: "MOTORCYCLE",
+  TRUCK: "TRUCK",
+  BUS: "BUS",
+} as const;
 
 export interface TariffResponseDTO {
   id?: number;
@@ -87,6 +108,7 @@ export interface TariffResponseDTO {
   firstHourRate?: number;
   additionalHourRate?: number;
   toleranceMinutes?: number;
+  vehicleType?: TariffResponseDTOVehicleType;
   active?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -173,8 +195,6 @@ export interface TicketRequestDTO {
   vehicleId: number;
   /** @exclusiveMinimum 0 */
   parkingSpaceId: number;
-  /** @exclusiveMinimum 0 */
-  tariffId: number;
 }
 
 export interface TicketResponseDTO {
@@ -193,6 +213,16 @@ export interface TicketResponseDTO {
   updatedAt?: string;
 }
 
+export type TariffRequestDTOVehicleType =
+  (typeof TariffRequestDTOVehicleType)[keyof typeof TariffRequestDTOVehicleType];
+
+export const TariffRequestDTOVehicleType = {
+  CAR: "CAR",
+  MOTORCYCLE: "MOTORCYCLE",
+  TRUCK: "TRUCK",
+  BUS: "BUS",
+} as const;
+
 export interface TariffRequestDTO {
   /**
    * @minLength 0
@@ -205,6 +235,7 @@ export interface TariffRequestDTO {
   additionalHourRate: number;
   /** @minimum 0 */
   toleranceMinutes: number;
+  vehicleType?: TariffRequestDTOVehicleType;
 }
 
 export interface PaymentRequestDTO {

@@ -47,52 +47,106 @@ public class DevConfig implements CommandLineRunner {
   }
 
   @Override
-  public void run(String... args) throws Exception {
-    seedVehicle();
+  public void run(String... args) {
+    seedParkingSpaceTypes();
     seedParkingSpaces();
-    seedTariff();
+    seedTariffs();
+    seedVehicles();
   }
 
-  private void seedVehicle() {
-    Vehicle vehicle = new Vehicle(null, "a10", "HB20", "red", VehicleType.CAR);
-    User owner = userRepository.findByEmailIgnoreCase(authProperties.getAdmin().getEmail())
-        .orElse(null);
-    vehicle.setOwner(owner);
-
-    if (!vehicleRepository.existsByLicensePlate(vehicle.getLicensePlate())) {
-      vehicleRepository.save(vehicle);
-    }
+  private void seedParkingSpaceTypes() {
+    ensureParkingSpaceType("Standard", "Vagas regulares descobertas", false);
+    ensureParkingSpaceType("Coberta", "Vagas cobertas", false);
+    ensureParkingSpaceType("Moto", "Vagas exclusivas para motocicletas", false);
   }
 
   private void seedParkingSpaces() {
-    ParkingSpaceType type = parkingSpaceTypeRepository.findByName("Standard")
-        .orElseGet(() -> {
-          ParkingSpaceType created = new ParkingSpaceType();
-          created.setName("Standard");
-          created.setDescription("Regular parking spots");
-          created.setRequiresCredential(false);
-          return parkingSpaceTypeRepository.save(created);
-        });
+    ParkingSpaceType standard = ensureParkingSpaceType(
+        "Standard", "Vagas regulares descobertas", false);
+    ParkingSpaceType covered = ensureParkingSpaceType(
+        "Coberta", "Vagas cobertas", false);
+    ParkingSpaceType motorcycle = ensureParkingSpaceType(
+        "Moto", "Vagas exclusivas para motocicletas", false);
 
-    List.of("A1", "A2", "A3").forEach(code -> {
-      if (!parkingSpaceRepository.existsByCode(code)) {
-        ParkingSpace space = new ParkingSpace();
-        space.setCode(code);
-        space.setType(type);
-        parkingSpaceRepository.save(space);
-      }
+    List.of("A1", "A2", "A3").forEach(code -> ensureParkingSpace(code, standard));
+    List.of("B1", "B2").forEach(code -> ensureParkingSpace(code, covered));
+    List.of("M1", "M2").forEach(code -> ensureParkingSpace(code, motorcycle));
+  }
+
+  private void seedTariffs() {
+
+    if (tariffRepository.findFirstByVehicleTypeIsNullAndActiveTrueOrderByIdAsc().isEmpty()) {
+      ensureTariff("Padrão", null, "10.00", "5.00", (short) 15);
+    }
+
+    ensureVehicleTypeTariff(VehicleType.CAR, "Carro", "10.00", "5.00", (short) 15);
+    ensureVehicleTypeTariff(VehicleType.MOTORCYCLE, "Moto", "6.00", "3.00", (short) 10);
+    ensureVehicleTypeTariff(VehicleType.TRUCK, "Caminhão", "18.00", "9.00", (short) 30);
+    ensureVehicleTypeTariff(VehicleType.BUS, "Ônibus", "25.00", "12.00", (short) 30);
+  }
+
+  private void seedVehicles() {
+    User owner = userRepository.findByEmailIgnoreCase(authProperties.getAdmin().getEmail())
+        .orElse(null);
+
+    ensureVehicle("ABC1D23", "HB20", "Prata", VehicleType.CAR, owner);
+    ensureVehicle("MOT1A23", "CG 160", "Vermelha", VehicleType.MOTORCYCLE, owner);
+    ensureVehicle("TRK1A23", "Delivery", "Branco", VehicleType.TRUCK, owner);
+    ensureVehicle("BUS1A23", "Urbano", "Azul", VehicleType.BUS, owner);
+  }
+
+  private ParkingSpaceType ensureParkingSpaceType(String name, String description,
+      boolean requiresCredential) {
+    return parkingSpaceTypeRepository.findByName(name).orElseGet(() -> {
+      ParkingSpaceType type = new ParkingSpaceType();
+      type.setName(name);
+      type.setDescription(description);
+      type.setRequiresCredential(requiresCredential);
+      return parkingSpaceTypeRepository.save(type);
     });
   }
 
-  private void seedTariff() {
-    Tariff tariff = new Tariff();
-    tariff.setDescription("Hourly");
-    tariff.setFirstHourRate(new BigDecimal("10.00"));
-    tariff.setAdditionalHourRate(new BigDecimal("5.00"));
-    tariff.setToleranceMinutes((short) 15);
-
-    if (!tariffRepository.existsByDescription(tariff.getDescription())) {
-      tariffRepository.save(tariff);
+  private void ensureParkingSpace(String code, ParkingSpaceType type) {
+    if (parkingSpaceRepository.existsByCode(code)) {
+      return;
     }
+
+    ParkingSpace space = new ParkingSpace();
+    space.setCode(code);
+    space.setType(type);
+    parkingSpaceRepository.save(space);
+  }
+
+  private void ensureVehicleTypeTariff(VehicleType vehicleType, String description,
+      String firstHourRate, String additionalHourRate, short toleranceMinutes) {
+    if (tariffRepository.findFirstByVehicleTypeAndActiveTrueOrderByIdAsc(vehicleType).isPresent()) {
+      return;
+    }
+    ensureTariff(description, vehicleType, firstHourRate, additionalHourRate, toleranceMinutes);
+  }
+
+  private Tariff ensureTariff(String description, VehicleType vehicleType,
+      String firstHourRate, String additionalHourRate, short toleranceMinutes) {
+    Tariff tariff = tariffRepository.findByDescription(description).orElseGet(Tariff::new);
+    if (tariff.getId() == null) {
+      tariff.setDescription(description);
+      tariff.setVehicleType(vehicleType);
+      tariff.setFirstHourRate(new BigDecimal(firstHourRate));
+      tariff.setAdditionalHourRate(new BigDecimal(additionalHourRate));
+      tariff.setToleranceMinutes(toleranceMinutes);
+    }
+    tariff.setActive(true);
+    return tariffRepository.save(tariff);
+  }
+
+  private void ensureVehicle(String licensePlate, String model, String color,
+      VehicleType vehicleType, User owner) {
+    if (vehicleRepository.existsByLicensePlate(licensePlate)) {
+      return;
+    }
+
+    Vehicle vehicle = new Vehicle(null, licensePlate, model, color, vehicleType);
+    vehicle.setOwner(owner);
+    vehicleRepository.save(vehicle);
   }
 }

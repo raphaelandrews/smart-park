@@ -12,11 +12,6 @@ import sh.andrews.smartpark.exception.BusinessRuleException;
 import sh.andrews.smartpark.model.entity.Tariff;
 import sh.andrews.smartpark.model.entity.Ticket;
 
-/**
- * Single source of truth for the amount owed on a ticket. The rates are snapshotted
- * onto the ticket when the session starts, so later tariff edits do not change an
- * existing session. Both the quote endpoint and payment registration use this service.
- */
 @Service
 public class TicketPricingService {
 
