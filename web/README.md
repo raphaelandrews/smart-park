@@ -44,6 +44,17 @@ by hand. All requests go through `src/api/fetcher.ts`, which prefixes `VITE_API_
 In development, Vite proxies `/api` to `http://localhost:8080`; the proxy is configured in
 `apps/web/vite.config.ts`.
 
+## Forms and payments
+
+All forms use TanStack Form with Zod Standard Schema validators. Field errors are shown
+after touch/submit, API field errors are mapped back onto the matching fields, and
+general API failures appear in a form-level alert.
+
+Payments use the API quote endpoint (`GET /ticket/{id}/quote`): selecting an active or
+unpaid ticket shows the server-calculated amount and breakdown. The client submits only
+the ticket ID; paying closes the session, calculates the final amount on the server and
+registers the payment in one transaction.
+
 ## Authentication
 
 - Email/password and Google sign-in both return a JWT access token.

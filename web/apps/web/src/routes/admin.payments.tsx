@@ -9,21 +9,28 @@ import { toast } from "sonner";
 
 import { getErrorMessage } from "@/api/errors";
 import type { PaymentResponseDTO } from "@/api/generated";
-import { getListPaymentsQueryKey, useListPayments, useRegisterPayment } from "@/api/generated";
-import { toLookupMap, useAllPayments, useAllTariffs, useAllTickets } from "@/api/lookups";
+import {
+  getListAvailableParkingSpacesQueryKey,
+  getListPaymentsQueryKey,
+  getListTicketsQueryKey,
+  useGetTicketQuote,
+  useListPayments,
+  useRegisterPayment,
+} from "@/api/generated";
+import { toLookupMap, useAllPayments, useAllTickets } from "@/api/lookups";
 import { applyServerFieldErrors } from "@/auth/form-utils";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
 import { FormDialog } from "@/components/form-dialog";
 import { FormError } from "@/components/forms/form-fields";
-import { FormSelectField, FormTextField } from "@/components/forms/tanstack-fields";
+import { FormSelectField } from "@/components/forms/tanstack-fields";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
+import { PaymentQuote } from "@/components/payment-quote";
 import { StatusBadge } from "@/components/status-badge";
 import { formatCompactDateTime, formatCurrency, formatDateTime } from "@/lib/format";
 import { isTicketOpen } from "@/lib/parking";
-import { estimateTicketAmount } from "@/lib/pricing";
 import type { SortState } from "@/lib/table";
 import { toSortParam } from "@/lib/table";
 import { paymentCreateSchema } from "@/lib/validation";
@@ -51,11 +58,9 @@ function PaymentsPage() {
   const pageData = query.data?.data;
 
   const tickets = useAllTickets();
-  const tariffs = useAllTariffs();
   const allPayments = useAllPayments();
 
   const ticketMap = useMemo(() => toLookupMap(tickets.items), [tickets.items]);
-  const tariffMap = useMemo(() => toLookupMap(tariffs.items), [tariffs.items]);
 
   const paidTicketIds = useMemo(
     () =>
@@ -76,12 +81,15 @@ function PaymentsPage() {
       tickets.items
         .filter(
           (ticket) =>
-            ticket.id !== undefined &&
-            !isTicketOpen(ticket) &&
-            !paidTicketIds.has(ticket.id) &&
-            ticket.active !== false,
+            ticket.id !== undefined && !paidTicketIds.has(ticket.id) && ticket.active !== false,
         )
-        .sort((first, second) => (second.exitTime ?? "").localeCompare(first.exitTime ?? ""))
+        .sort((first, second) => {
+          const openDelta = Number(isTicketOpen(second)) - Number(isTicketOpen(first));
+          if (openDelta !== 0) {
+            return openDelta;
+          }
+          return (second.entryTime ?? "").localeCompare(first.entryTime ?? "");
+        })
         .flatMap((ticket) =>
           ticket.id === undefined
             ? []
@@ -90,7 +98,7 @@ function PaymentsPage() {
                   value: String(ticket.id),
                   label: `#${ticket.id} · ${ticket.licensePlate ?? "—"} · ${
                     ticket.parkingSpaceCode ?? "—"
-                  }`,
+                  }${isTicketOpen(ticket) ? " · em andamento" : ""}`,
                 },
               ],
         ),
@@ -98,13 +106,18 @@ function PaymentsPage() {
   );
 
   async function invalidate() {
-    await queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() }),
+      queryClient.invalidateQueries({ queryKey: getListTicketsQueryKey() }),
+      queryClient.invalidateQueries({
+        queryKey: getListAvailableParkingSpacesQueryKey(),
+      }),
+    ]);
   }
 
   const form = useForm({
     defaultValues: {
       ticketId: "" as string | number,
-      amount: "" as string | number,
     },
     validators: {
       onChange: paymentCreateSchema,
@@ -121,8 +134,13 @@ function PaymentsPage() {
       }
 
       try {
-        await createMutation.mutateAsync({ data: parsed.data });
-        toast.success("Pagamento registrado.");
+        const response = await createMutation.mutateAsync({ data: parsed.data });
+        const amount = response.data?.amount;
+        toast.success(
+          amount !== undefined
+            ? `Pagamento de ${formatCurrency(amount)} registrado.`
+            : "Pagamento registrado.",
+        );
         setDialogOpen(false);
         setPage(0);
         await invalidate();
@@ -137,37 +155,27 @@ function PaymentsPage() {
     if (!dialogOpen) {
       return;
     }
-    form.reset({ ticketId: "", amount: "" });
+    form.reset({ ticketId: "" });
   }, [dialogOpen, form]);
 
   const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
   const isSubmitting = formSubmitting || createMutation.isPending;
   const formTicketId = useStore(form.store, (state) => state.values.ticketId);
-  const selectedTicket = formTicketId === "" ? undefined : ticketMap.get(Number(formTicketId));
-  const estimatedAmount = selectedTicket
-    ? estimateTicketAmount(
-        selectedTicket,
-        selectedTicket.tariffId !== undefined ? tariffMap.get(selectedTicket.tariffId) : undefined,
-      )
-    : null;
+  const quoteTicketId =
+    formTicketId === "" || formTicketId === undefined ? null : Number(formTicketId);
+  const quoteQuery = useGetTicketQuote(quoteTicketId ?? 0, {
+    query: {
+      enabled: quoteTicketId !== null && !Number.isNaN(quoteTicketId),
+      retry: false,
+      meta: { skipGlobalErrorToast: true },
+    },
+  });
+  const quote = quoteQuery.data?.data;
 
   function openCreate() {
-    form.reset({ ticketId: "", amount: "" });
+    form.reset({ ticketId: "" });
     setFormError(null);
     setDialogOpen(true);
-  }
-
-  function handleTicketChange(value: string) {
-    const ticket = value === "" ? undefined : ticketMap.get(Number(value));
-    if (!ticket) {
-      form.setFieldValue("amount", "");
-      return;
-    }
-    const estimate = estimateTicketAmount(
-      ticket,
-      ticket.tariffId !== undefined ? tariffMap.get(ticket.tariffId) : undefined,
-    );
-    form.setFieldValue("amount", estimate !== null && estimate > 0 ? estimate.toFixed(2) : "");
   }
 
   const columns: DataTableColumn<PaymentResponseDTO>[] = [
@@ -233,7 +241,7 @@ function PaymentsPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Pagamentos"
-        description="Registre pagamentos de sessões encerradas e acompanhe o histórico."
+        description="Registre pagamentos e encerre sessões em andamento."
         actions={
           <Button onClick={openCreate}>
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
@@ -306,7 +314,7 @@ function PaymentsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title="Novo pagamento"
-        description="Cada ticket aceita um único pagamento. O valor é calculado pela tarifa e pode ser ajustado se necessário."
+        description="O pagamento encerra a sessão e registra o valor calculado pelo servidor. Um ticket aceita apenas um pagamento."
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -315,6 +323,7 @@ function PaymentsPage() {
         submitLabel="Registrar"
         submitVariant="ink"
         isSubmitting={isSubmitting}
+        submitDisabled={quoteQuery.isFetching || !quote}
       >
         <FormError message={formError} />
         <form.Field name="ticketId">
@@ -324,7 +333,6 @@ function PaymentsPage() {
               id="payment-ticket"
               label="Ticket"
               options={ticketOptions}
-              onValueChange={handleTicketChange}
               placeholder={tickets.query.isPending ? "Carregando tickets..." : "Selecione o ticket"}
               description={
                 ticketOptions.length === 0
@@ -334,25 +342,7 @@ function PaymentsPage() {
             />
           )}
         </form.Field>
-        <form.Field name="amount">
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="payment-amount"
-              label="Valor (R$)"
-              type="number"
-              placeholder="0,00"
-              inputMode="decimal"
-              min={0.01}
-              step="0.01"
-              description={
-                estimatedAmount !== null
-                  ? `Estimativa pela tarifa: ${formatCurrency(estimatedAmount)}`
-                  : "Informe o valor cobrado do cliente."
-              }
-            />
-          )}
-        </form.Field>
+        <PaymentQuote quote={quote} isLoading={quoteQuery.isFetching} error={quoteQuery.error} />
       </FormDialog>
     </div>
   );

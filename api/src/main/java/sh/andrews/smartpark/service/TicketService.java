@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import sh.andrews.smartpark.dto.request.TicketRequestDTO;
-import sh.andrews.smartpark.dto.request.TicketUpdateRequestDTO;
+import sh.andrews.smartpark.dto.response.TicketQuoteResponseDTO;
 import sh.andrews.smartpark.dto.response.TicketResponseDTO;
 import sh.andrews.smartpark.exception.BusinessRuleException;
 import sh.andrews.smartpark.exception.ResourceNotFoundException;
@@ -28,17 +28,20 @@ public class TicketService {
   private final ParkingSpaceRepository parkingSpaceRepository;
   private final TariffRepository tariffRepository;
   private final CurrentUserService currentUserService;
+  private final TicketPricingService pricingService;
 
   public TicketService(TicketRepository ticketRepository,
       VehicleRepository vehicleRepository,
       ParkingSpaceRepository parkingSpaceRepository,
       TariffRepository tariffRepository,
-      CurrentUserService currentUserService) {
+      CurrentUserService currentUserService,
+      TicketPricingService pricingService) {
     this.ticketRepository = ticketRepository;
     this.vehicleRepository = vehicleRepository;
     this.parkingSpaceRepository = parkingSpaceRepository;
     this.tariffRepository = tariffRepository;
     this.currentUserService = currentUserService;
+    this.pricingService = pricingService;
   }
 
   @Transactional
@@ -70,6 +73,11 @@ public class TicketService {
   }
 
   @Transactional(readOnly = true)
+  public TicketQuoteResponseDTO quote(Long id) {
+    return pricingService.quote(findActiveEntity(id));
+  }
+
+  @Transactional(readOnly = true)
   public Page<TicketResponseDTO> findAll(Pageable pageable) {
     if (currentUserService.isAdmin()) {
       return ticketRepository.findByActiveTrue(pageable)
@@ -79,22 +87,6 @@ public class TicketService {
     Long ownerId = currentUserService.requireCurrentUser().getId();
     return ticketRepository.findByActiveTrueAndVehicleOwnerId(ownerId, pageable)
         .map(TicketResponseDTO::fromEntity);
-  }
-
-  @Transactional
-  public TicketResponseDTO update(Long id, TicketUpdateRequestDTO request) {
-    Ticket ticket = findActiveEntity(id);
-
-    if (ticket.getExitTime() != null) {
-      throw new BusinessRuleException("O ticket " + id + " já foi encerrado.");
-    }
-    if (request.getExitTime().isBefore(ticket.getEntryTime())) {
-      throw new BusinessRuleException(
-          "A data/hora de saída não pode ser anterior à data/hora de entrada.");
-    }
-
-    ticket.setExitTime(request.getExitTime());
-    return TicketResponseDTO.fromEntity(ticket);
   }
 
   @Transactional

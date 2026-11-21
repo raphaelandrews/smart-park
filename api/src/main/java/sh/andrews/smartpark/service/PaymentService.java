@@ -1,5 +1,7 @@
 package sh.andrews.smartpark.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,13 +23,16 @@ public class PaymentService {
   private final PaymentRepository paymentRepository;
   private final TicketRepository ticketRepository;
   private final CurrentUserService currentUserService;
+  private final TicketPricingService pricingService;
 
   public PaymentService(PaymentRepository paymentRepository,
       TicketRepository ticketRepository,
-      CurrentUserService currentUserService) {
+      CurrentUserService currentUserService,
+      TicketPricingService pricingService) {
     this.paymentRepository = paymentRepository;
     this.ticketRepository = ticketRepository;
     this.currentUserService = currentUserService;
+    this.pricingService = pricingService;
   }
 
   @Transactional
@@ -38,7 +43,15 @@ public class PaymentService {
       throw new DuplicateResourceException("pagamento", "ticket", ticket.getId());
     }
 
-    Payment saved = paymentRepository.save(request.toEntity(ticket));
+    // Payment is the checkout operation: it closes the session and records the
+    // server-calculated amount in the same transaction.
+    if (ticket.getExitTime() == null) {
+      ticket.setExitTime(LocalDateTime.now());
+      ticketRepository.save(ticket);
+    }
+
+    Payment saved = paymentRepository.save(
+        request.toEntity(ticket, pricingService.calculateAmount(ticket)));
     return PaymentResponseDTO.fromEntity(saved);
   }
 

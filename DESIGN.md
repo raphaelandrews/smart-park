@@ -402,7 +402,7 @@ Rules:
 ```tsx
 <PageHeader
   title="Tickets"
-  description="Abertura e encerramento de sessões."
+  description="Acompanhe as sessões até o pagamento."
   actions={<Button>Abrir ticket</Button>}
 />
 ```
@@ -1056,15 +1056,15 @@ casually.
 
 ### Applying the mobile reference to Smart Park
 
-- **Driver area:** screen header (“Seu ticket” + lot name), stepper, info strip
-  (active session time + “Alterar” for vehicle), media rows (vehicle/ticket), card rail
-  of shortcuts (add vehicle, history), and a sticky bar “Total • Continuar para
-  pagamento”.
+- **Driver area:** screen header (“Seu ticket” + lot name), info strip (active session
+  amount + “Pagar e sair”), media rows (vehicle/ticket), card rail of shortcuts (add
+  vehicle, history), and a sticky bar with the live amount and “Pagar e sair”.
 - **Admin mobile/tablet:** collapse tables into media rows; keep desktop density at
   `md+`.
-- **Ticket flow:** stepper `Abrir → Encerrar → Pagar`; ticket row mirrors a cart line
-  (plate tile, entry time in the meta line, duration/status control and value on the
-  bottom row).
+- **Ticket flow:** `Abrir → Pagar e sair` (checkout); paying sets the exit time,
+  calculates the amount and closes the session transactionally. Ticket rows mirror a
+  cart line (plate tile, entry time in the meta line, duration/status control and value
+  on the bottom row).
 - **Dashboard:** card rail for shortcuts/recent activity; stat tiles for occupancy
   and revenue; info strip for the active session summary.
 - **Forms:** use the sticky action bar only on mobile; on desktop pin the footer inside

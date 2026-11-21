@@ -6,7 +6,6 @@ import {
   paymentCreateSchema,
   registerSchema,
   tariffCreateSchema,
-  ticketCloseSchema,
   vehicleCreateSchema,
 } from "@/lib/validation";
 
@@ -102,15 +101,10 @@ describe("numeric form inputs", () => {
 });
 
 describe("payment validation", () => {
-  test("coerces ticket and amount", () => {
-    const parsed = paymentCreateSchema.parse({ ticketId: "12", amount: "20.50" });
-    expect(parsed.ticketId).toBe(12);
-    expect(parsed.amount).toBe(20.5);
-  });
-
-  test("enforces the minimum and two decimals", () => {
-    expect(paymentCreateSchema.safeParse({ ticketId: "12", amount: "0" }).success).toBe(false);
-    expect(paymentCreateSchema.safeParse({ ticketId: "12", amount: "10.999" }).success).toBe(false);
+  test("requires a positive ticket ID", () => {
+    expect(paymentCreateSchema.parse({ ticketId: "12" }).ticketId).toBe(12);
+    expect(paymentCreateSchema.safeParse({ ticketId: "" }).success).toBe(false);
+    expect(paymentCreateSchema.safeParse({ ticketId: "0" }).success).toBe(false);
   });
 });
 
@@ -133,13 +127,6 @@ describe("parking space validation", () => {
         blockingReason: "",
       }).success,
     ).toBe(false);
-  });
-});
-
-describe("ticket close validation", () => {
-  test("requires a local date-time", () => {
-    expect(ticketCloseSchema.safeParse({ exitTime: "2026-11-20T22:30" }).success).toBe(true);
-    expect(ticketCloseSchema.safeParse({ exitTime: "20/11/2026 22:30" }).success).toBe(false);
   });
 });
 

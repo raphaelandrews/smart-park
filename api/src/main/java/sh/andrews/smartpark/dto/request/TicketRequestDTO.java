@@ -34,6 +34,9 @@ public class TicketRequestDTO {
     ticket.setVehicle(vehicle);
     ticket.setParkingSpace(parkingSpace);
     ticket.setTariff(tariff);
+    ticket.setFirstHourRate(tariff.getFirstHourRate());
+    ticket.setAdditionalHourRate(tariff.getAdditionalHourRate());
+    ticket.setToleranceMinutes(tariff.getToleranceMinutes());
     ticket.setEntryTime(LocalDateTime.now());
     return ticket;
   }

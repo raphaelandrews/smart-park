@@ -1,5 +1,7 @@
 package sh.andrews.smartpark.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,6 +49,13 @@ public class ParkingSpaceService {
   public Page<ParkingSpaceResponseDTO> findAll(Pageable pageable) {
     return parkingSpaceRepository.findByActiveTrue(pageable)
         .map(ParkingSpaceResponseDTO::fromEntity);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ParkingSpaceResponseDTO> findAvailable() {
+    return parkingSpaceRepository.findAvailable().stream()
+        .map(ParkingSpaceResponseDTO::fromEntity)
+        .toList();
   }
 
   @Transactional

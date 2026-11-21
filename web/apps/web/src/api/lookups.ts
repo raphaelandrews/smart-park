@@ -1,4 +1,5 @@
 import {
+  useListAvailableParkingSpaces,
   useListParkingSpaces,
   useListParkingSpaceTypes,
   useListPayments,
@@ -40,6 +41,18 @@ export function useAllParkingSpaces() {
     items,
     total: page?.totalElements ?? 0,
     hasMore: (page?.totalElements ?? 0) > items.length,
+  };
+}
+
+export function useAvailableParkingSpaces() {
+  const query = useListAvailableParkingSpaces();
+  const items = query.data?.data ?? [];
+
+  return {
+    query,
+    items,
+    total: items.length,
+    hasMore: false,
   };
 }
 

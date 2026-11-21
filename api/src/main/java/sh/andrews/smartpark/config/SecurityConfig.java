@@ -123,6 +123,9 @@ public class SecurityConfig {
             .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
             .permitAll()
             .requestMatchers("/h2-console/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/parking-space/available", "/tariff",
+                "/tariff/**")
+            .authenticated()
             .requestMatchers("/parking-space/**", "/parking-space-type/**", "/tariff/**",
                 "/admin/**")
             .hasRole("ADMIN")

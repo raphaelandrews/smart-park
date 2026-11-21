@@ -1,6 +1,7 @@
 package sh.andrews.smartpark.controller;
 
 import java.net.URI;
+import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -41,6 +42,12 @@ public class ParkingSpaceController {
       @ParameterObject
       @PageableDefault(size = 10, sort = "code") Pageable pageable) {
     return service.findAll(pageable);
+  }
+
+  @Operation(operationId = "listAvailableParkingSpaces", summary = "List free, unblocked parking spaces")
+  @GetMapping("/available")
+  public List<ParkingSpaceResponseDTO> findAvailable() {
+    return service.findAvailable();
   }
 
   @Operation(operationId = "getParkingSpace", summary = "Find a parking space by ID")

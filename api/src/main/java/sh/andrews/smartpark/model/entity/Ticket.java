@@ -1,5 +1,6 @@
 package sh.andrews.smartpark.model.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -50,6 +51,15 @@ public class Ticket {
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "GMT")
   @Column(name = "exitTime")
   private LocalDateTime exitTime;
+
+  @Column(name = "firstHourRate", precision = 10, scale = 2)
+  private BigDecimal firstHourRate;
+
+  @Column(name = "additionalHourRate", precision = 10, scale = 2)
+  private BigDecimal additionalHourRate;
+
+  @Column(name = "toleranceMinutes")
+  private Short toleranceMinutes;
 
   @Column(name = "createdAt", nullable = false, updatable = false)
   private LocalDateTime createdAt;

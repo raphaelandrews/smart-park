@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const LICENSE_PLATE_PATTERN = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
-export const LOCAL_DATE_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
 
 /** Mirrors the API normalization: uppercase and remove separators. */
 export function normalizeLicensePlate(value: string): string {
@@ -186,21 +185,10 @@ export const ticketCreateSchema = z.object({
   tariffId: idInput("A tarifa"),
 });
 
-export const ticketCloseSchema = z.object({
-  exitTime: z
-    .string()
-    .min(1, "A data/hora de saída é obrigatória")
-    .refine(
-      (value) => LOCAL_DATE_TIME_PATTERN.test(value),
-      "Informe uma data/hora válida (AAAA-MM-DDTHH:mm)",
-    ),
-});
-
 // Payments
 
 export const paymentCreateSchema = z.object({
   ticketId: idInput("O ticket"),
-  amount: moneyInput("O valor", 0.01),
 });
 
 // Authentication
@@ -244,7 +232,6 @@ export type ParkingSpaceUpdateInput = z.infer<typeof parkingSpaceUpdateSchema>;
 export type TariffCreateInput = z.infer<typeof tariffCreateSchema>;
 export type TariffUpdateInput = z.infer<typeof tariffUpdateSchema>;
 export type TicketCreateInput = z.infer<typeof ticketCreateSchema>;
-export type TicketCloseInput = z.infer<typeof ticketCloseSchema>;
 export type PaymentCreateInput = z.infer<typeof paymentCreateSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

@@ -23,15 +23,25 @@ import { toast } from "sonner";
 import { getErrorMessage } from "@/api/errors";
 import type { PaymentResponseDTO, TicketResponseDTO, VehicleResponseDTO } from "@/api/generated";
 import {
+  getListAvailableParkingSpacesQueryKey,
   getListPaymentsQueryKey,
   getListTicketsQueryKey,
   getListVehiclesQueryKey,
   useDeactivateVehicle,
+  useGetTicketQuote,
   useRegisterPayment,
+  useRegisterTicket,
   useRegisterVehicle,
   useUpdateVehicle,
 } from "@/api/generated";
-import { toLookupMap, useAllPayments, useAllTickets, useAllVehicles } from "@/api/lookups";
+import {
+  toLookupMap,
+  useAllPayments,
+  useAllTariffs,
+  useAllTickets,
+  useAllVehicles,
+  useAvailableParkingSpaces,
+} from "@/api/lookups";
 import { useAuth } from "@/auth/auth-context";
 import { applyServerFieldErrors } from "@/auth/form-utils";
 import { requireAuthenticated } from "@/auth/session";
@@ -42,6 +52,7 @@ import { FormSelectField, FormTextField } from "@/components/forms/tanstack-fiel
 import { InfoStrip } from "@/components/info-strip";
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
+import { PaymentQuote } from "@/components/payment-quote";
 import { SectionHeader } from "@/components/section-header";
 import { StatusBadge } from "@/components/status-badge";
 import { RowActionsMenu } from "@/components/row-actions-menu";
@@ -60,6 +71,7 @@ import { getOpenTickets, isTicketOpen, isTicketPaid } from "@/lib/parking";
 import {
   licensePlateSchema,
   paymentCreateSchema,
+  ticketCreateSchema,
   vehicleCreateSchema,
   vehicleUpdateSchema,
 } from "@/lib/validation";
@@ -102,15 +114,19 @@ function MyHomePage() {
   const vehicles = useAllVehicles();
   const tickets = useAllTickets();
   const payments = useAllPayments();
+  const availableSpaces = useAvailableParkingSpaces();
+  const tariffs = useAllTariffs();
 
   const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<VehicleResponseDTO | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VehicleResponseDTO | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentInitialTicketId, setPaymentInitialTicketId] = useState("");
+  const [sessionOpen, setSessionOpen] = useState(false);
 
   const [vehicleFormError, setVehicleFormError] = useState<string | null>(null);
   const [paymentFormError, setPaymentFormError] = useState<string | null>(null);
+  const [sessionFormError, setSessionFormError] = useState<string | null>(null);
 
   const createVehicle = useRegisterVehicle({
     mutation: { meta: { skipGlobalErrorToast: true } },
@@ -124,17 +140,42 @@ function MyHomePage() {
   const registerPayment = useRegisterPayment({
     mutation: { meta: { skipGlobalErrorToast: true } },
   });
+  const registerTicket = useRegisterTicket({
+    mutation: { meta: { skipGlobalErrorToast: true } },
+  });
 
   const openTickets = getOpenTickets(tickets.items);
   const activeTicket = openTickets[0];
   const ticketMap = toLookupMap(tickets.items);
 
-  const pendingTickets = tickets.items.filter(
-    (ticket) =>
-      !isTicketOpen(ticket) && ticket.id !== undefined && !isTicketPaid(ticket.id, payments.items),
-  );
+  const unpaidTickets = tickets.items
+    .filter(
+      (ticket) =>
+        ticket.id !== undefined &&
+        ticket.active !== false &&
+        !isTicketPaid(ticket.id, payments.items),
+    )
+    .sort((first, second) => {
+      const openDelta = Number(isTicketOpen(second)) - Number(isTicketOpen(first));
+      if (openDelta !== 0) {
+        return openDelta;
+      }
+      return (second.entryTime ?? "").localeCompare(first.entryTime ?? "");
+    });
 
-  const unpaidTicketOptions = pendingTickets.flatMap((ticket) =>
+  const pendingTickets = unpaidTickets.filter((ticket) => !isTicketOpen(ticket));
+
+  const activeQuoteQuery = useGetTicketQuote(activeTicket?.id ?? 0, {
+    query: {
+      enabled: activeTicket?.id !== undefined,
+      retry: false,
+      refetchInterval: 30_000,
+      meta: { skipGlobalErrorToast: true },
+    },
+  });
+  const activeQuote = activeQuoteQuery.data?.data;
+
+  const unpaidTicketOptions = unpaidTickets.flatMap((ticket) =>
     ticket.id === undefined
       ? []
       : [
@@ -142,7 +183,7 @@ function MyHomePage() {
             value: String(ticket.id),
             label: `#${ticket.id} · ${ticket.licensePlate ?? "—"} · ${
               ticket.parkingSpaceCode ?? "—"
-            }`,
+            }${isTicketOpen(ticket) ? " · em andamento" : ""}`,
           },
         ],
   );
@@ -191,10 +232,46 @@ function MyHomePage() {
     },
   });
 
+  const sessionForm = useForm({
+    defaultValues: {
+      vehicleId: "" as string | number,
+      parkingSpaceId: "" as string | number,
+      tariffId: "" as string | number,
+    },
+    validators: {
+      onChange: ticketCreateSchema,
+      onSubmit: ticketCreateSchema,
+    },
+    listeners: {
+      onChange: () => setSessionFormError(null),
+    },
+    onSubmit: async ({ value, formApi }) => {
+      setSessionFormError(null);
+      const parsed = ticketCreateSchema.safeParse(value);
+      if (!parsed.success) {
+        return;
+      }
+
+      try {
+        await registerTicket.mutateAsync({ data: parsed.data });
+        toast.success("Sessão aberta.");
+        setSessionOpen(false);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: getListTicketsQueryKey() }),
+          queryClient.invalidateQueries({
+            queryKey: getListAvailableParkingSpacesQueryKey(),
+          }),
+        ]);
+      } catch (error) {
+        applyServerFieldErrors(formApi, error);
+        setSessionFormError(getErrorMessage(error));
+      }
+    },
+  });
+
   const paymentForm = useForm({
     defaultValues: {
       ticketId: "" as string | number,
-      amount: "" as string | number,
     },
     listeners: {
       onChange: () => setPaymentFormError(null),
@@ -211,12 +288,20 @@ function MyHomePage() {
       }
 
       try {
-        await registerPayment.mutateAsync({ data: parsed.data });
-        toast.success("Pagamento registrado.");
+        const response = await registerPayment.mutateAsync({ data: parsed.data });
+        const amount = response.data?.amount;
+        toast.success(
+          amount !== undefined
+            ? `Pagamento de ${formatCurrency(amount)} registrado.`
+            : "Pagamento registrado.",
+        );
         setPaymentOpen(false);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() }),
           queryClient.invalidateQueries({ queryKey: getListTicketsQueryKey() }),
+          queryClient.invalidateQueries({
+            queryKey: getListAvailableParkingSpacesQueryKey(),
+          }),
         ]);
       } catch (error) {
         applyServerFieldErrors(formApi, error);
@@ -224,6 +309,13 @@ function MyHomePage() {
       }
     },
   });
+
+  useEffect(() => {
+    if (!sessionOpen) {
+      return;
+    }
+    sessionForm.reset({ vehicleId: "", parkingSpaceId: "", tariffId: "" });
+  }, [sessionOpen, sessionForm]);
 
   useEffect(() => {
     if (!vehicleDialogOpen) {
@@ -252,8 +344,54 @@ function MyHomePage() {
     vehicleFormSubmitting || createVehicle.isPending || updateVehicle.isPending;
   const isPaymentSubmitting = paymentFormSubmitting || registerPayment.isPending;
   const paymentTicketId = useStore(paymentForm.store, (state) => state.values.ticketId);
+  const paymentQuoteId =
+    paymentTicketId === "" || paymentTicketId === undefined ? null : Number(paymentTicketId);
+  const paymentQuoteQuery = useGetTicketQuote(paymentQuoteId ?? 0, {
+    query: {
+      enabled: paymentQuoteId !== null && !Number.isNaN(paymentQuoteId),
+      retry: false,
+      meta: { skipGlobalErrorToast: true },
+    },
+  });
+  const paymentQuote = paymentQuoteQuery.data?.data;
   const selectedPaymentTicket =
     paymentTicketId === "" ? undefined : ticketMap.get(Number(paymentTicketId));
+
+  const parkedVehicleIds = new Set(
+    openTickets.flatMap((ticket) => (ticket.vehicleId !== undefined ? [ticket.vehicleId] : [])),
+  );
+  const sessionVehicleOptions = vehicles.items.flatMap((vehicle) =>
+    vehicle.id !== undefined && !parkedVehicleIds.has(vehicle.id)
+      ? [
+          {
+            value: String(vehicle.id),
+            label: `${vehicle.licensePlate ?? "—"} · ${vehicle.model ?? "Sem modelo"}`,
+          },
+        ]
+      : [],
+  );
+  const sessionSpaceOptions = availableSpaces.items.flatMap((space) =>
+    space.id !== undefined
+      ? [
+          {
+            value: String(space.id),
+            label: `${space.code ?? "—"} · ${space.parkingSpaceTypeName ?? "Sem tipo"}`,
+          },
+        ]
+      : [],
+  );
+  const sessionTariffOptions = tariffs.items.flatMap((tariff) =>
+    tariff.id !== undefined
+      ? [
+          {
+            value: String(tariff.id),
+            label: `${tariff.description ?? "Tarifa"} · ${formatCurrency(tariff.firstHourRate)} / 1ª hora`,
+          },
+        ]
+      : [],
+  );
+  const sessionSubmitting = useStore(sessionForm.store, (state) => state.isSubmitting);
+  const isSessionSubmitting = sessionSubmitting || registerTicket.isPending;
 
   useEffect(() => {
     if (!paymentOpen) {
@@ -290,13 +428,24 @@ function MyHomePage() {
     setVehicleDialogOpen(true);
   }
 
+  function openSession() {
+    if (vehicles.items.length === 0) {
+      toast.info("Cadastre um veículo antes de abrir uma sessão.");
+      openNewVehicle();
+      return;
+    }
+    sessionForm.reset({ vehicleId: "", parkingSpaceId: "", tariffId: "" });
+    setSessionFormError(null);
+    setSessionOpen(true);
+  }
+
   function openPayment(ticket?: TicketResponseDTO) {
-    if (pendingTickets.length === 0) {
-      toast.info("Nenhuma sessão encerrada aguardando pagamento.");
+    if (unpaidTickets.length === 0) {
+      toast.info("Nenhuma sessão aguardando pagamento.");
       return;
     }
 
-    setPaymentInitialTicketId(String(ticket?.id ?? pendingTickets[0]?.id));
+    setPaymentInitialTicketId(String(ticket?.id ?? unpaidTickets[0]?.id));
     setPaymentFormError(null);
     setPaymentOpen(true);
   }
@@ -316,7 +465,7 @@ function MyHomePage() {
   }
 
   const roleLabel = getRoleLabel(user?.role);
-  const hasPendingPayment = pendingTickets.length > 0;
+  const hasBottomBar = Boolean(activeTicket) || pendingTickets.length > 0;
 
   return (
     <div className="min-h-svh bg-background">
@@ -360,7 +509,7 @@ function MyHomePage() {
       <main
         className={cn(
           "mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-6 md:py-8",
-          hasPendingPayment && "pb-32 md:pb-8",
+          hasBottomBar && "pb-32 md:pb-8",
         )}
       >
         <PageHeader
@@ -368,6 +517,10 @@ function MyHomePage() {
           description="Acompanhe seus veículos, sessões e pagamentos em um só lugar."
           actions={
             <>
+              <Button onClick={openSession}>
+                <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
+                Abrir ticket
+              </Button>
               <StatusBadge tone={isAdmin ? "brand" : "info"}>{roleLabel}</StatusBadge>
               {isAdmin ? (
                 <Button
@@ -387,32 +540,31 @@ function MyHomePage() {
           <InfoStrip
             icon={Ticket01Icon}
             title={
-              openTickets.length > 1
-                ? `${openTickets.length} sessões ativas`
-                : formatDurationMinutes(getElapsedMinutes(activeTicket.entryTime))
+              activeQuote
+                ? formatCurrency(activeQuote.amount ?? 0)
+                : activeQuoteQuery.isFetching
+                  ? "Calculando..."
+                  : formatDurationMinutes(getElapsedMinutes(activeTicket.entryTime))
             }
-            description={
-              openTickets.length > 1
-                ? "Acompanhe cada sessão na lista abaixo."
-                : `${activeTicket.licensePlate ?? "—"} · Vaga ${
-                    activeTicket.parkingSpaceCode ?? "—"
-                  } · desde ${formatDateTime(activeTicket.entryTime)}`
-            }
+            description={`${formatDurationMinutes(
+              activeQuote?.durationMinutes ?? getElapsedMinutes(activeTicket.entryTime),
+            )} · ${activeTicket.licensePlate ?? "—"} · Vaga ${
+              activeTicket.parkingSpaceCode ?? "—"
+            }`}
             action={
               <Button
                 variant="outline"
-                className="h-11 rounded-full bg-card px-5 text-[15px] font-medium shadow-floating"
-                nativeButton={false}
-                render={<a href="#sessoes" />}
+                className="hidden h-11 rounded-full bg-card px-5 text-[15px] font-medium shadow-floating md:inline-flex"
+                onClick={() => openPayment(activeTicket)}
               >
-                Ver sessão
+                Pagar e sair
               </Button>
             }
           />
-        ) : hasPendingPayment ? (
+        ) : pendingTickets.length > 0 ? (
           <InfoStrip
             icon={CreditCardIcon}
-            title="Pendente"
+            title="Pagamento pendente"
             description={`${pendingTickets.length} ${
               pendingTickets.length === 1 ? "sessão encerrada" : "sessões encerradas"
             } aguardando pagamento`}
@@ -430,7 +582,16 @@ function MyHomePage() {
           <InfoStrip
             icon={SquareParkingIcon}
             title="Tudo em dia"
-            description="Nenhuma sessão ativa ou pagamento pendente."
+            description="Abra uma sessão ao entrar no estacionamento."
+            action={
+              <Button
+                variant="outline"
+                className="h-11 rounded-full bg-card px-5 text-[15px] font-medium shadow-floating"
+                onClick={openSession}
+              >
+                Abrir ticket
+              </Button>
+            }
           />
         )}
 
@@ -539,7 +700,7 @@ function MyHomePage() {
         <section id="sessoes" className="scroll-mt-24 space-y-3">
           <SectionHeader
             title={isAdmin ? "Sessões" : "Minhas sessões"}
-            description="A abertura e o encerramento são feitos pela operação do estacionamento."
+            description="Abra uma sessão ao entrar e pague para encerrá-la."
           />
 
           {tickets.query.error ? (
@@ -550,7 +711,7 @@ function MyHomePage() {
             <SectionEmpty
               icon={<HugeiconsIcon icon={Ticket01Icon} strokeWidth={2} className="size-5" />}
               title="Nenhuma sessão registrada"
-              description="Quando a operação abrir uma sessão para o seu veículo, ela aparece aqui."
+              description="Abra um ticket ao entrar no estacionamento para iniciar uma sessão."
             />
           ) : (
             <div className="rounded-xl border border-border bg-card">
@@ -605,7 +766,7 @@ function MyHomePage() {
         </section>
       </main>
 
-      {hasPendingPayment ? (
+      {hasBottomBar ? (
         <>
           <div
             aria-hidden
@@ -613,26 +774,116 @@ function MyHomePage() {
           />
           <div className="fixed inset-x-6 bottom-0 z-30 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
             <div className="flex min-h-[60px] items-center gap-4 rounded-2xl bg-ink py-2.5 pr-4 pl-5 text-white shadow-bar">
-              <div className="min-w-0 flex-1">
-                <p className="text-[15px] leading-5 font-medium">Pagamento</p>
-                <p className="text-xs text-white/60">
-                  {pendingTickets.length}{" "}
-                  {pendingTickets.length === 1 ? "sessão encerrada" : "sessões encerradas"}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-11 shrink-0 rounded-full px-3 text-[15px] font-medium text-white hover:bg-white/10 hover:text-white"
-                onClick={() => openPayment(pendingTickets[0])}
-              >
-                Pagar
-                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-5" />
-              </Button>
+              {activeTicket ? (
+                <>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] leading-5 font-medium tabular-nums">
+                      {activeQuote ? formatCurrency(activeQuote.amount ?? 0) : "Calculando..."}
+                    </p>
+                    <p className="truncate text-xs text-white/60">
+                      {formatDurationMinutes(
+                        activeQuote?.durationMinutes ?? getElapsedMinutes(activeTicket.entryTime),
+                      )}{" "}
+                      · {activeTicket.licensePlate ?? "—"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-11 shrink-0 rounded-full px-3 text-[15px] font-medium text-white hover:bg-white/10 hover:text-white"
+                    onClick={() => openPayment(activeTicket)}
+                  >
+                    Pagar e sair
+                    <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] leading-5 font-medium">Pagamento</p>
+                    <p className="text-xs text-white/60">
+                      {pendingTickets.length}{" "}
+                      {pendingTickets.length === 1 ? "sessão encerrada" : "sessões encerradas"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-11 shrink-0 rounded-full px-3 text-[15px] font-medium text-white hover:bg-white/10 hover:text-white"
+                    onClick={() => openPayment(pendingTickets[0])}
+                  >
+                    Pagar
+                    <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-5" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </>
       ) : null}
+
+      <FormDialog
+        open={sessionOpen}
+        onOpenChange={setSessionOpen}
+        title="Abrir ticket"
+        description="Selecione o veículo, uma vaga disponível e a tarifa aplicada."
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void sessionForm.handleSubmit();
+        }}
+        submitLabel="Abrir ticket"
+        isSubmitting={isSessionSubmitting}
+      >
+        <FormError message={sessionFormError} />
+        <sessionForm.Field name="vehicleId">
+          {(field) => (
+            <FormSelectField
+              field={field}
+              id="session-vehicle"
+              label="Veículo"
+              options={sessionVehicleOptions}
+              placeholder={
+                vehicles.query.isPending ? "Carregando veículos..." : "Selecione o veículo"
+              }
+              description={
+                sessionVehicleOptions.length === 0
+                  ? "Todos os seus veículos já estão em uma sessão aberta."
+                  : undefined
+              }
+            />
+          )}
+        </sessionForm.Field>
+        <sessionForm.Field name="parkingSpaceId">
+          {(field) => (
+            <FormSelectField
+              field={field}
+              id="session-space"
+              label="Vaga"
+              options={sessionSpaceOptions}
+              placeholder={
+                availableSpaces.query.isPending ? "Carregando vagas..." : "Selecione a vaga"
+              }
+              description={
+                sessionSpaceOptions.length === 0
+                  ? "Não há vagas disponíveis no momento."
+                  : "Somente vagas livres e não bloqueadas aparecem aqui."
+              }
+            />
+          )}
+        </sessionForm.Field>
+        <sessionForm.Field name="tariffId">
+          {(field) => (
+            <FormSelectField
+              field={field}
+              id="session-tariff"
+              label="Tarifa"
+              options={sessionTariffOptions}
+              placeholder={tariffs.query.isPending ? "Carregando tarifas..." : "Selecione a tarifa"}
+            />
+          )}
+        </sessionForm.Field>
+      </FormDialog>
 
       <FormDialog
         open={vehicleDialogOpen}
@@ -740,15 +991,16 @@ function MyHomePage() {
         open={paymentOpen}
         onOpenChange={setPaymentOpen}
         title="Pagar sessão"
-        description="Confirme o valor informado pela operação para registrar o pagamento."
+        description="O valor é calculado pelo servidor com base na tarifa e no tempo da sessão."
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
           void paymentForm.handleSubmit();
         }}
-        submitLabel="Registrar pagamento"
+        submitLabel="Pagar e sair"
         submitVariant="ink"
         isSubmitting={isPaymentSubmitting}
+        submitDisabled={paymentQuoteQuery.isFetching || !paymentQuote}
       >
         <FormError message={paymentFormError} />
         <paymentForm.Field name="ticketId">
@@ -756,28 +1008,18 @@ function MyHomePage() {
             <FormSelectField
               field={field}
               id="my-payment-ticket"
-              label="Sessão encerrada"
+              label="Sessão"
               options={unpaidTicketOptions}
               placeholder="Selecione a sessão"
-              description="Somente sessões encerradas e sem pagamento aparecem aqui."
+              description="O pagamento encerra a sessão e libera a vaga."
             />
           )}
         </paymentForm.Field>
-        <paymentForm.Field name="amount">
-          {(field) => (
-            <FormTextField
-              field={field}
-              id="my-payment-amount"
-              label="Valor (R$)"
-              type="number"
-              placeholder="0,00"
-              inputMode="decimal"
-              min={0.01}
-              step="0.01"
-              description="O valor é definido pela operação no momento da saída."
-            />
-          )}
-        </paymentForm.Field>
+        <PaymentQuote
+          quote={paymentQuote}
+          isLoading={paymentQuoteQuery.isFetching}
+          error={paymentQuoteQuery.error}
+        />
         {selectedPaymentTicket ? (
           <dl className="grid gap-1 rounded-xl bg-secondary px-3 py-2.5 text-sm">
             <div className="flex justify-between gap-3">
@@ -789,8 +1031,8 @@ function MyHomePage() {
               <dd>{selectedPaymentTicket.parkingSpaceCode ?? "—"}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Saída</dt>
-              <dd>{formatDateTime(selectedPaymentTicket.exitTime)}</dd>
+              <dt className="text-muted-foreground">Entrada</dt>
+              <dd>{formatDateTime(selectedPaymentTicket.entryTime)}</dd>
             </div>
           </dl>
         ) : null}
@@ -847,7 +1089,7 @@ function SessionRow({
                 {paid ? "Pago" : "Pendente"}
               </StatusBadge>
             )}
-            {!open && !paid ? (
+            {!paid ? (
               <Button
                 type="button"
                 variant="outline"
@@ -855,7 +1097,7 @@ function SessionRow({
                 className="relative h-8 rounded-full px-2 after:absolute after:-inset-1.5"
                 onClick={onPay}
               >
-                Pagar
+                {open ? "Pagar e sair" : "Pagar"}
               </Button>
             ) : null}
           </div>

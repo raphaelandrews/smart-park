@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,7 +19,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import sh.andrews.smartpark.dto.request.TicketRequestDTO;
-import sh.andrews.smartpark.dto.request.TicketUpdateRequestDTO;
+import sh.andrews.smartpark.dto.response.TicketQuoteResponseDTO;
 import sh.andrews.smartpark.dto.response.TicketResponseDTO;
 import sh.andrews.smartpark.service.TicketService;
 
@@ -49,6 +48,12 @@ public class TicketController {
     return service.findById(id);
   }
 
+  @Operation(operationId = "getTicketQuote", summary = "Calculate the amount owed for a ticket")
+  @GetMapping("/{id}/quote")
+  public TicketQuoteResponseDTO quote(@PathVariable Long id) {
+    return service.quote(id);
+  }
+
   @Operation(operationId = "registerTicket", summary = "Open a ticket")
   @PostMapping
   public ResponseEntity<TicketResponseDTO> register(
@@ -57,13 +62,6 @@ public class TicketController {
     return ResponseEntity
         .created(URI.create("/ticket/" + created.getId()))
         .body(created);
-  }
-
-  @Operation(operationId = "updateTicket", summary = "Register the ticket exit time")
-  @PutMapping("/{id}")
-  public TicketResponseDTO update(@PathVariable Long id,
-      @RequestBody @Valid TicketUpdateRequestDTO request) {
-    return service.update(id, request);
   }
 
   @Operation(operationId = "deactivateTicket", summary = "Deactivate a ticket")

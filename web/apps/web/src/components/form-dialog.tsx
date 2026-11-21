@@ -22,6 +22,7 @@ interface FormDialogProps {
   submitLabel?: string;
   cancelLabel?: string;
   submitVariant?: "default" | "ink";
+  submitDisabled?: boolean;
   isSubmitting?: boolean;
   className?: string;
 }
@@ -36,6 +37,7 @@ export function FormDialog({
   submitLabel = "Salvar",
   cancelLabel = "Cancelar",
   submitVariant = "default",
+  submitDisabled = false,
   isSubmitting = false,
   className,
 }: FormDialogProps) {
@@ -65,7 +67,7 @@ export function FormDialog({
             >
               {cancelLabel}
             </Button>
-            <Button type="submit" variant={submitVariant} disabled={isSubmitting}>
+            <Button type="submit" variant={submitVariant} disabled={isSubmitting || submitDisabled}>
               {isSubmitting ? (
                 <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="animate-spin" />
               ) : null}
