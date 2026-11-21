@@ -2,23 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@web/ui/components/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm, useStore } from "@tanstack/react-form";
-import { Add01Icon, CreditCardIcon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, CreditCardIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { getErrorMessage } from "@/api/errors";
 import type { PaymentResponseDTO } from "@/api/generated";
-import {
-  getGetPaymentQueryKey,
-  getListPaymentsQueryKey,
-  useDeactivatePayment,
-  useListPayments,
-  useRegisterPayment,
-} from "@/api/generated";
+import { getListPaymentsQueryKey, useListPayments, useRegisterPayment } from "@/api/generated";
 import { toLookupMap, useAllPayments, useAllTariffs, useAllTickets } from "@/api/lookups";
 import { applyServerFieldErrors } from "@/auth/form-utils";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { DataTableColumn } from "@/components/data-table";
 import { DataTable } from "@/components/data-table";
 import { FormDialog } from "@/components/form-dialog";
@@ -27,9 +20,7 @@ import { FormSelectField, FormTextField } from "@/components/forms/tanstack-fiel
 import { MediaThumb } from "@/components/media-thumb";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
-import { RowActionsMenu } from "@/components/row-actions-menu";
 import { StatusBadge } from "@/components/status-badge";
-import { TableActions } from "@/components/table-actions";
 import { formatCompactDateTime, formatCurrency, formatDateTime } from "@/lib/format";
 import { isTicketOpen } from "@/lib/parking";
 import { estimateTicketAmount } from "@/lib/pricing";
@@ -51,7 +42,6 @@ function PaymentsPage() {
     direction: "desc",
   });
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<PaymentResponseDTO | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const query = useListPayments(
@@ -80,44 +70,35 @@ function PaymentsPage() {
   const createMutation = useRegisterPayment({
     mutation: { meta: { skipGlobalErrorToast: true } },
   });
-  const deleteMutation = useDeactivatePayment({
-    mutation: { meta: { skipGlobalErrorToast: true } },
-  });
 
   const ticketOptions = useMemo(
     () =>
       tickets.items
         .filter(
           (ticket) =>
-            ticket.id !== undefined && !paidTicketIds.has(ticket.id) && ticket.active !== false,
+            ticket.id !== undefined &&
+            !isTicketOpen(ticket) &&
+            !paidTicketIds.has(ticket.id) &&
+            ticket.active !== false,
         )
-        .sort((first, second) => {
-          const openDelta = Number(isTicketOpen(second)) - Number(isTicketOpen(first));
-          if (openDelta !== 0) {
-            return openDelta;
-          }
-          return (second.entryTime ?? "").localeCompare(first.entryTime ?? "");
-        })
-        .flatMap((ticket) => {
-          if (ticket.id === undefined) {
-            return [];
-          }
-          const state = isTicketOpen(ticket) ? "aberto" : "encerrado";
-          return [
-            {
-              value: String(ticket.id),
-              label: `#${ticket.id} · ${ticket.licensePlate ?? "—"} · ${ticket.parkingSpaceCode ?? "—"} (${state})`,
-            },
-          ];
-        }),
+        .sort((first, second) => (second.exitTime ?? "").localeCompare(first.exitTime ?? ""))
+        .flatMap((ticket) =>
+          ticket.id === undefined
+            ? []
+            : [
+                {
+                  value: String(ticket.id),
+                  label: `#${ticket.id} · ${ticket.licensePlate ?? "—"} · ${
+                    ticket.parkingSpaceCode ?? "—"
+                  }`,
+                },
+              ],
+        ),
     [tickets.items, paidTicketIds],
   );
 
-  async function invalidate(paymentId?: number) {
+  async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
-    if (paymentId !== undefined) {
-      await queryClient.invalidateQueries({ queryKey: getGetPaymentQueryKey(paymentId) });
-    }
   }
 
   const form = useForm({
@@ -189,23 +170,6 @@ function PaymentsPage() {
     form.setFieldValue("amount", estimate !== null && estimate > 0 ? estimate.toFixed(2) : "");
   }
 
-  async function handleDeactivate() {
-    if (!deleteTarget?.id) {
-      return;
-    }
-    try {
-      await deleteMutation.mutateAsync({ id: deleteTarget.id });
-      toast.success("Pagamento desativado.");
-      setDeleteTarget(null);
-      if ((pageData?.content?.length ?? 0) === 1 && page > 0) {
-        setPage((current) => current - 1);
-      }
-      await invalidate(deleteTarget.id);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  }
-
   const columns: DataTableColumn<PaymentResponseDTO>[] = [
     {
       id: "id",
@@ -263,24 +227,13 @@ function PaymentsPage() {
           <StatusBadge tone="success">Ativo</StatusBadge>
         ),
     },
-    {
-      id: "actions",
-      header: "Ações",
-      headerClassName: "text-right",
-      cell: (payment) => (
-        <TableActions
-          onDelete={() => setDeleteTarget(payment)}
-          disabled={payment.active === false}
-        />
-      ),
-    },
   ];
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Pagamentos"
-        description="Registre pagamentos e estorne cobranças vinculadas aos tickets."
+        description="Registre pagamentos de sessões encerradas e acompanhe o histórico."
         actions={
           <Button onClick={openCreate}>
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
@@ -314,18 +267,6 @@ function PaymentsPage() {
                       Ticket #{payment.ticketId ?? "—"}
                       {ticket?.licensePlate ? ` · ${ticket.licensePlate}` : ""}
                     </h3>
-                    <RowActionsMenu
-                      label="Opções do pagamento"
-                      items={[
-                        {
-                          label: "Desativar",
-                          icon: Delete02Icon,
-                          destructive: true,
-                          hidden: payment.active === false,
-                          onSelect: () => setDeleteTarget(payment),
-                        },
-                      ]}
-                    />
                   </div>
                   <p className="truncate text-[13px] leading-[18px] text-muted-foreground">
                     {ticket?.parkingSpaceCode ? `Vaga ${ticket.parkingSpaceCode} · ` : ""}
@@ -365,7 +306,7 @@ function PaymentsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title="Novo pagamento"
-        description="Cada ticket aceita um único pagamento ativo. O valor é uma estimativa e pode ser ajustado."
+        description="Cada ticket aceita um único pagamento. O valor é calculado pela tarifa e pode ser ajustado se necessário."
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -413,21 +354,6 @@ function PaymentsPage() {
           )}
         </form.Field>
       </FormDialog>
-
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteTarget(null);
-          }
-        }}
-        title="Desativar pagamento"
-        description={`O pagamento #${deleteTarget?.id ?? ""} deixará de aparecer nas listas e o ticket voltará a ficar pendente. Esta ação não pode ser desfeita.`}
-        confirmLabel="Desativar"
-        destructive
-        isPending={deleteMutation.isPending}
-        onConfirm={handleDeactivate}
-      />
     </div>
   );
 }
