@@ -17,7 +17,8 @@ export const LOOKUP_PAGE_SIZE = 200;
 const lookupParams = { size: LOOKUP_PAGE_SIZE } as const;
 
 export function useAllVehicles() {
-  const query = useListVehicles(lookupParams);
+  // Newest first so a vehicle just added in the driver area appears at the top.
+  const query = useListVehicles({ size: LOOKUP_PAGE_SIZE, sort: ["createdAt,desc"] });
   const page = query.data?.data;
   const items = page?.content ?? [];
 
@@ -69,7 +70,8 @@ export function useAllTariffs() {
 }
 
 export function useAllTickets() {
-  const query = useListTickets(lookupParams);
+  // Most recent sessions first so paged filtering still sees the open tickets.
+  const query = useListTickets({ size: LOOKUP_PAGE_SIZE, sort: ["entryTime,desc"] });
   const page = query.data?.data;
   const items = page?.content ?? [];
 
@@ -82,7 +84,7 @@ export function useAllTickets() {
 }
 
 export function useAllPayments() {
-  const query = useListPayments(lookupParams);
+  const query = useListPayments({ size: LOOKUP_PAGE_SIZE, sort: ["paymentDateTime,desc"] });
   const page = query.data?.data;
   const items = page?.content ?? [];
 

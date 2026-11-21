@@ -1,29 +1,21 @@
 import { Button } from "@web/ui/components/button";
-import { Input } from "@web/ui/components/input";
-import { Label } from "@web/ui/components/label";
+import { useForm, useStore } from "@tanstack/react-form";
 import { Alert02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getErrorMessage } from "@/api/errors";
 import { useAuth } from "@/auth/auth-context";
-import { fieldErrorsFromZod, mergeFieldErrors, resolvePostLoginPath } from "@/auth/form-utils";
+import { applyServerFieldErrors, resolvePostLoginPath } from "@/auth/form-utils";
 import { GoogleSignInButton, isGoogleConfigured } from "@/components/auth/google-sign-in-button";
-import { PasswordField } from "@/components/auth/password-field";
+import { FormPasswordField, FormTextField } from "@/components/forms/tanstack-fields";
 import { loginSchema } from "@/lib/validation";
 
 export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const { login, loginWithGoogle } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const submittingRef = useRef(false);
-
-  useEffect(() => {
-    submittingRef.current = isSubmitting;
-  }, [isSubmitting]);
 
   const finish = useCallback(
     (role: string | undefined) => {
@@ -32,20 +24,55 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
     [redirectTo],
   );
 
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    validators: {
+      onChange: loginSchema,
+      onSubmit: loginSchema,
+    },
+    listeners: {
+      onChange: () => setError(null),
+    },
+    onSubmit: async ({ value, formApi }) => {
+      setError(null);
+      const parsed = loginSchema.safeParse(value);
+      if (!parsed.success) {
+        return;
+      }
+
+      try {
+        const response = await login(parsed.data);
+        finish(response.user?.role);
+      } catch (loginError) {
+        applyServerFieldErrors(formApi, loginError);
+        setError(getErrorMessage(loginError));
+      }
+    },
+  });
+
+  const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  const isSubmitting = formSubmitting || googleSubmitting;
+
+  useEffect(() => {
+    submittingRef.current = isSubmitting;
+  }, [isSubmitting]);
+
   const handleGoogleSuccess = useCallback(
     async (idToken: string) => {
       if (submittingRef.current) {
         return;
       }
-      setIsSubmitting(true);
+      setGoogleSubmitting(true);
       setError(null);
-      setFieldErrors({});
       try {
         const response = await loginWithGoogle({ idToken });
         finish(response.user?.role);
       } catch (googleError) {
         setError(getErrorMessage(googleError));
-        setIsSubmitting(false);
+        setGoogleSubmitting(false);
       }
     },
     [finish, loginWithGoogle],
@@ -53,30 +80,8 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 
   const handleGoogleError = useCallback((googleError: unknown) => {
     setError(getErrorMessage(googleError));
-    setIsSubmitting(false);
+    setGoogleSubmitting(false);
   }, []);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-
-    const parsed = loginSchema.safeParse({ email, password });
-    if (!parsed.success) {
-      setFieldErrors(fieldErrorsFromZod(parsed.error));
-      return;
-    }
-
-    setFieldErrors({});
-    setIsSubmitting(true);
-    try {
-      const response = await login(parsed.data);
-      finish(response.user?.role);
-    } catch (loginError) {
-      setFieldErrors((current) => mergeFieldErrors(current, loginError));
-      setError(getErrorMessage(loginError));
-      setIsSubmitting(false);
-    }
-  }
 
   return (
     <div className="grid gap-5">
@@ -90,30 +95,43 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-        <div className="grid gap-1.5">
-          <Label htmlFor="login-email">Email</Label>
-          <Input
-            id="login-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="voce@exemplo.com"
-            autoComplete="email"
-            aria-invalid={Boolean(fieldErrors.email)}
-          />
-          {fieldErrors.email ? <p className="text-xs text-danger">{fieldErrors.email}</p> : null}
-        </div>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void form.handleSubmit();
+        }}
+        className="grid gap-4"
+        noValidate
+      >
+        <form.Field name="email">
+          {(field) => (
+            <FormTextField
+              field={field}
+              id="login-email"
+              label="Email"
+              type="email"
+              placeholder="voce@exemplo.com"
+              autoComplete="email"
+              inputMode="email"
+              maxLength={255}
+              spellCheck={false}
+            />
+          )}
+        </form.Field>
 
-        <PasswordField
-          id="login-password"
-          label="Senha"
-          value={password}
-          onChange={setPassword}
-          placeholder="Digite sua senha"
-          autoComplete="current-password"
-          error={fieldErrors.password}
-        />
+        <form.Field name="password">
+          {(field) => (
+            <FormPasswordField
+              field={field}
+              id="login-password"
+              label="Senha"
+              placeholder="Digite sua senha"
+              autoComplete="current-password"
+              maxLength={72}
+            />
+          )}
+        </form.Field>
 
         <Button type="submit" size="lg" className="mt-1 w-full" disabled={isSubmitting}>
           {isSubmitting ? (

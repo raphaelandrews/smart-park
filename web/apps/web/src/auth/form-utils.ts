@@ -1,20 +1,15 @@
 import { getFieldErrors } from "@/api/errors";
 import { homeForRole } from "@/auth/session";
-import type { ZodError } from "zod";
-
-export function fieldErrorsFromZod(error: ZodError): Record<string, string> {
-  const entries = error.issues.flatMap((issue) => {
-    const field = issue.path[0];
-    return typeof field === "string" ? [[field, issue.message] as const] : [];
-  });
-  return Object.fromEntries(entries);
-}
-
-export function mergeFieldErrors(
-  first: Record<string, string>,
-  error: unknown,
-): Record<string, string> {
-  return { ...first, ...getFieldErrors(error) };
+import type { AnyFormApi } from "@tanstack/react-form";
+/** Distributes API field errors onto the matching TanStack Form fields. */
+export function applyServerFieldErrors(form: AnyFormApi, error: unknown) {
+  for (const [fieldName, message] of Object.entries(getFieldErrors(error))) {
+    form.setFieldMeta(fieldName as never, (previous) => ({
+      ...previous,
+      errorMap: { ...previous.errorMap, onServer: message },
+      errorSourceMap: { ...previous.errorSourceMap, onServer: "field" },
+    }));
+  }
 }
 
 export function resolvePostLoginPath(

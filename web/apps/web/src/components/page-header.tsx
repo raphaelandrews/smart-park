@@ -8,14 +8,18 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-end sm:justify-between">
-      <div className="space-y-1">
-        <h1 className="text-[28px] leading-[34px] font-semibold">{title}</h1>
+    <div className="flex flex-col gap-4 px-2 pb-2 sm:flex-row sm:items-end sm:justify-between sm:px-0">
+      <div className="min-w-0 space-y-1">
+        <h1 className="text-[17px] leading-6 font-semibold text-balance sm:text-[28px] sm:leading-[34px]">
+          {title}
+        </h1>
         {description ? (
-          <p className="max-w-2xl text-sm leading-5 text-muted-foreground">{description}</p>
+          <p className="max-w-2xl text-[13px] leading-[18px] text-muted-foreground sm:text-sm sm:leading-5">
+            {description}
+          </p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }

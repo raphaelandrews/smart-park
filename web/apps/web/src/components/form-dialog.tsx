@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@web/ui/components/dialog";
+import { cn } from "@web/ui/lib/utils";
 import type { FormEvent, ReactNode } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
@@ -20,6 +21,7 @@ interface FormDialogProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   submitLabel?: string;
   cancelLabel?: string;
+  submitVariant?: "default" | "ink";
   isSubmitting?: boolean;
   className?: string;
 }
@@ -33,19 +35,28 @@ export function FormDialog({
   onSubmit,
   submitLabel = "Salvar",
   cancelLabel = "Cancelar",
+  submitVariant = "default",
   isSubmitting = false,
   className,
 }: FormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} disablePointerDismissal={isSubmitting}>
-      <DialogContent showCloseButton={!isSubmitting} className={className}>
-        <form onSubmit={onSubmit} className="grid gap-4" noValidate>
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            {description ? <DialogDescription>{description}</DialogDescription> : null}
-          </DialogHeader>
-          <div className="grid gap-3">{children}</div>
-          <DialogFooter>
+      <DialogContent
+        showCloseButton={!isSubmitting}
+        className={cn(
+          "flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0",
+          className,
+        )}
+      >
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-6 pb-4">
+            <DialogHeader>
+              <DialogTitle>{title}</DialogTitle>
+              {description ? <DialogDescription>{description}</DialogDescription> : null}
+            </DialogHeader>
+            <div className="mt-4 grid gap-3">{children}</div>
+          </div>
+          <DialogFooter className="border-t border-border bg-popover px-6 py-4">
             <Button
               type="button"
               variant="outline"
@@ -54,7 +65,7 @@ export function FormDialog({
             >
               {cancelLabel}
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" variant={submitVariant} disabled={isSubmitting}>
               {isSubmitting ? (
                 <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="animate-spin" />
               ) : null}

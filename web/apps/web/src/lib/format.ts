@@ -12,6 +12,13 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
 });
 
+const compactDateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export const EMPTY_VALUE = "—";
 
 /**
@@ -52,6 +59,12 @@ export function formatNumber(value: number | null | undefined): string {
 export function formatDateTime(value: string | null | undefined): string {
   const date = parseApiDateTime(value);
   return date ? dateTimeFormatter.format(date) : EMPTY_VALUE;
+}
+
+/** Compact date/time for media-row meta lines (day/month, hour:minute). */
+export function formatCompactDateTime(value: string | null | undefined): string {
+  const date = parseApiDateTime(value);
+  return date ? compactDateTimeFormatter.format(date) : EMPTY_VALUE;
 }
 
 export function formatDate(value: string | null | undefined): string {
@@ -109,4 +122,13 @@ export function formatDuration(
   end: string | null | undefined,
 ): string {
   return formatDurationMinutes(getDurationMinutes(start, end));
+}
+
+/** Formats a Date for an `<input type="datetime-local">` (browser local timezone). */
+export function toDateTimeLocalValue(date: Date = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return (
+    [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join("-") +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
 }

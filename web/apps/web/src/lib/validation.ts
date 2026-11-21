@@ -12,34 +12,61 @@ const requiredText = (label: string, max: number) =>
   z
     .string()
     .trim()
-    .min(1, `${label} é obrigatório`)
-    .max(max, `${label} deve ter no máximo ${max} caracteres`);
+    .min(1, `Informe ${label.toLowerCase()}`)
+    .max(max, `${label}: máximo de ${max} caracteres`);
 
 const optionalText = (label: string, max: number) =>
-  z.string().trim().max(max, `${label} deve ter no máximo ${max} caracteres`).optional();
+  z.string().trim().max(max, `${label}: máximo de ${max} caracteres`).optional();
 
 const positiveId = (label: string) =>
   z
-    .number({ error: `${label} é obrigatório` })
-    .int(`${label} deve ser um número inteiro`)
-    .positive(`${label} deve ser positivo`);
+    .number({ error: `Informe ${label.toLowerCase()}` })
+    .int(`${label}: deve ser um número inteiro`)
+    .positive(`${label}: deve ser positivo`);
 
 const money = (label: string, min = 0) =>
   z
-    .number({ error: `${label} é obrigatório` })
-    .min(min, min === 0 ? `${label} não pode ser negativo` : `${label} deve ser maior que zero`)
-    .max(99_999_999.99, `${label} deve ter no máximo 8 dígitos inteiros`)
+    .number({ error: `Informe ${label.toLowerCase()}` })
+    .min(min, min === 0 ? `${label}: não pode ser negativo` : `${label}: deve ser maior que zero`)
+    .max(99_999_999.99, `${label}: máximo de 8 dígitos inteiros`)
     .refine(
       (value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-9,
-      `${label} deve ter no máximo 2 casas decimais`,
+      `${label}: use no máximo 2 casas decimais`,
     );
 
 const nonNegativeMinutes = (label: string) =>
   z
-    .number({ error: `${label} é obrigatório` })
-    .int(`${label} deve ser um número inteiro`)
-    .min(0, `${label} não pode ser negativo`)
-    .max(32_767, `${label} é muito grande`);
+    .number({ error: `Informe ${label.toLowerCase()}` })
+    .int(`${label}: deve ser um número inteiro`)
+    .min(0, `${label}: não pode ser negativo`)
+    .max(32_767, `${label}: valor muito alto`);
+
+/**
+ * Form inputs yield strings; TanStack Form validators must reject empty values and
+ * coerce valid numeric strings before applying the numeric rules. The output remains
+ * a number so the parsed value can be sent to the API unchanged.
+ */
+const numberFromInput = (label: string, schema: z.ZodNumber) =>
+  z
+    .union([z.string(), z.number()])
+    .transform((value, ctx) => {
+      const raw = typeof value === "string" ? value.trim() : value;
+      if (raw === "" || (typeof raw === "number" && !Number.isFinite(raw))) {
+        ctx.addIssue({ code: "custom", message: `Informe ${label.toLowerCase()}` });
+        return z.NEVER;
+      }
+      const parsed = typeof raw === "string" ? Number(raw) : raw;
+      if (!Number.isFinite(parsed)) {
+        ctx.addIssue({ code: "custom", message: `${label}: número inválido` });
+        return z.NEVER;
+      }
+      return parsed;
+    })
+    .pipe(schema);
+
+const idInput = (label: string) => numberFromInput(label, positiveId(label));
+const moneyInput = (label: string, min = 0) => numberFromInput(label, money(label, min));
+const minutesInput = (label: string) => numberFromInput(label, nonNegativeMinutes(label));
 
 export const vehicleTypeSchema = z.enum(["CAR", "MOTORCYCLE", "TRUCK", "BUS"], {
   error: "O tipo de veículo é obrigatório",
@@ -77,12 +104,19 @@ export const parkingSpaceTypeCreateSchema = z.object({
 
 export const parkingSpaceTypeUpdateSchema = parkingSpaceTypeCreateSchema;
 
+/** Form validator: keeps description as a string so it matches the controlled input. */
+export const parkingSpaceTypeFormSchema = z.object({
+  name: requiredText("O nome", 100),
+  description: z.string().trim().max(255, "A descrição: máximo de 255 caracteres"),
+  requiresCredential: z.boolean({ error: "Informe se o tipo de vaga exige credencial" }),
+});
+
 // Parking spaces
 
 export const parkingSpaceCreateSchema = z
   .object({
     code: requiredText("O código", 20),
-    parkingSpaceTypeId: positiveId("O tipo da vaga"),
+    parkingSpaceTypeId: idInput("O tipo da vaga"),
     blocked: z.boolean().default(false),
     blockingReason: optionalText("O motivo do bloqueio", 255),
   })
@@ -98,9 +132,30 @@ export const parkingSpaceCreateSchema = z
 
 export const parkingSpaceUpdateSchema = z
   .object({
-    parkingSpaceTypeId: positiveId("O tipo da vaga"),
+    parkingSpaceTypeId: idInput("O tipo da vaga"),
     blocked: z.boolean({ error: "Informe se a vaga está bloqueada" }),
     blockingReason: optionalText("O motivo do bloqueio", 255),
+  })
+  .superRefine((value, ctx) => {
+    if (value.blocked && !value.blockingReason) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["blockingReason"],
+        message: "Informe o motivo do bloqueio",
+      });
+    }
+  });
+
+/** Shared create/edit validator: keeps the code field for the edit form. */
+export const parkingSpaceFormSchema = z
+  .object({
+    code: requiredText("O código", 20),
+    parkingSpaceTypeId: idInput("O tipo da vaga"),
+    blocked: z.boolean({ error: "Informe se a vaga está bloqueada" }),
+    blockingReason: z
+      .string()
+      .trim()
+      .max(255, "O motivo do bloqueio deve ter no máximo 255 caracteres"),
   })
   .superRefine((value, ctx) => {
     if (value.blocked && !value.blockingReason) {
@@ -116,9 +171,9 @@ export const parkingSpaceUpdateSchema = z
 
 export const tariffCreateSchema = z.object({
   description: requiredText("A descrição", 255),
-  firstHourRate: money("O valor da primeira hora"),
-  additionalHourRate: money("O valor da hora adicional"),
-  toleranceMinutes: nonNegativeMinutes("Os minutos de tolerância"),
+  firstHourRate: moneyInput("O valor da primeira hora"),
+  additionalHourRate: moneyInput("O valor da hora adicional"),
+  toleranceMinutes: minutesInput("Os minutos de tolerância"),
 });
 
 export const tariffUpdateSchema = tariffCreateSchema;
@@ -126,9 +181,9 @@ export const tariffUpdateSchema = tariffCreateSchema;
 // Tickets
 
 export const ticketCreateSchema = z.object({
-  vehicleId: positiveId("O veículo"),
-  parkingSpaceId: positiveId("A vaga"),
-  tariffId: positiveId("A tarifa"),
+  vehicleId: idInput("O veículo"),
+  parkingSpaceId: idInput("A vaga"),
+  tariffId: idInput("A tarifa"),
 });
 
 export const ticketCloseSchema = z.object({
@@ -144,8 +199,8 @@ export const ticketCloseSchema = z.object({
 // Payments
 
 export const paymentCreateSchema = z.object({
-  ticketId: positiveId("O ticket"),
-  amount: money("O valor", 0.01),
+  ticketId: idInput("O ticket"),
+  amount: moneyInput("O valor", 0.01),
 });
 
 // Authentication

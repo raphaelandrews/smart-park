@@ -40,7 +40,7 @@ public class AuthProperties {
   public static class Admin {
 
     private String email;
-    private String name = "Operador";
+    private String name = "Admin";
     private String password;
   }
 }

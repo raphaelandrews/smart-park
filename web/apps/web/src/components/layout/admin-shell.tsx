@@ -221,7 +221,7 @@ export function AdminShell() {
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator
@@ -245,7 +245,7 @@ export function AdminShell() {
             type="button"
             variant="outline"
             size="icon"
-            className="relative rounded-xl bg-card"
+            className="relative size-11 rounded-full bg-card shadow-floating sm:size-10"
             aria-label="Notificações"
           >
             <HugeiconsIcon icon={BellDotIcon} strokeWidth={2} className="size-5" />
@@ -253,7 +253,7 @@ export function AdminShell() {
           </Button>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 p-4 pt-6 md:p-6 md:pt-6 lg:p-8">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 px-6 pt-6 md:p-6 md:pt-6 lg:p-8">
           <Outlet />
         </div>
       </SidebarInset>

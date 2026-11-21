@@ -1,19 +1,429 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "@web/ui/components/button";
+import { useQueryClient } from "@tanstack/react-query";
+import { useForm, useStore } from "@tanstack/react-form";
+import {
+  Add01Icon,
+  Delete02Icon,
+  PencilEdit02Icon,
+  ReceiptTextIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ReceiptTextIcon } from "@hugeicons/core-free-icons";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { PlaceholderPage } from "@/components/placeholder-page";
+import { getErrorMessage } from "@/api/errors";
+import type { TariffResponseDTO } from "@/api/generated";
+import {
+  getGetTariffQueryKey,
+  getListTariffsQueryKey,
+  useDeactivateTariff,
+  useListTariffs,
+  useRegisterTariff,
+  useUpdateTariff,
+} from "@/api/generated";
+import { applyServerFieldErrors } from "@/auth/form-utils";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import type { DataTableColumn } from "@/components/data-table";
+import { DataTable } from "@/components/data-table";
+import { FormDialog } from "@/components/form-dialog";
+import { FormError } from "@/components/forms/form-fields";
+import { FormTextField } from "@/components/forms/tanstack-fields";
+import { MediaThumb } from "@/components/media-thumb";
+import { PageHeader } from "@/components/page-header";
+import { Pagination } from "@/components/pagination";
+import { RowActionsMenu } from "@/components/row-actions-menu";
+import { StatusBadge } from "@/components/status-badge";
+import { TableActions } from "@/components/table-actions";
+import { formatCurrency, formatDateTime } from "@/lib/format";
+import type { SortState } from "@/lib/table";
+import { toSortParam } from "@/lib/table";
+import { tariffCreateSchema, tariffUpdateSchema } from "@/lib/validation";
+
+const PAGE_SIZE = 10;
 
 export const Route = createFileRoute("/admin/tariffs")({
   component: TariffsPage,
 });
 
 function TariffsPage() {
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(0);
+  const [sort, setSort] = useState<SortState>({
+    field: "description",
+    direction: "asc",
+  });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<TariffResponseDTO | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TariffResponseDTO | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const query = useListTariffs(
+    { page, size: PAGE_SIZE, sort: toSortParam(sort) },
+    { query: { meta: { skipGlobalErrorToast: true } } },
+  );
+  const pageData = query.data?.data;
+
+  const createMutation = useRegisterTariff({
+    mutation: { meta: { skipGlobalErrorToast: true } },
+  });
+  const updateMutation = useUpdateTariff({
+    mutation: { meta: { skipGlobalErrorToast: true } },
+  });
+  const deleteMutation = useDeactivateTariff({
+    mutation: { meta: { skipGlobalErrorToast: true } },
+  });
+
+  const form = useForm({
+    defaultValues: {
+      description: "",
+      firstHourRate: "" as string | number,
+      additionalHourRate: "" as string | number,
+      toleranceMinutes: "" as string | number,
+    },
+    validators: {
+      onChange: tariffCreateSchema,
+      onSubmit: tariffCreateSchema,
+    },
+    listeners: {
+      onChange: () => setFormError(null),
+    },
+    onSubmit: async ({ value, formApi }) => {
+      setFormError(null);
+
+      try {
+        if (editing) {
+          const parsed = tariffUpdateSchema.safeParse(value);
+          if (!parsed.success) {
+            return;
+          }
+          await updateMutation.mutateAsync({
+            id: editing.id as number,
+            data: parsed.data,
+          });
+          toast.success("Tarifa atualizada.");
+          setDialogOpen(false);
+          await invalidate(editing.id);
+          return;
+        }
+
+        const parsed = tariffCreateSchema.safeParse(value);
+        if (!parsed.success) {
+          return;
+        }
+        await createMutation.mutateAsync({ data: parsed.data });
+        toast.success("Tarifa cadastrada.");
+        setDialogOpen(false);
+        setPage(0);
+        await invalidate();
+      } catch (error) {
+        applyServerFieldErrors(formApi, error);
+        setFormError(getErrorMessage(error));
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!dialogOpen) {
+      return;
+    }
+    form.reset(
+      editing
+        ? {
+            description: editing.description ?? "",
+            firstHourRate: editing.firstHourRate !== undefined ? String(editing.firstHourRate) : "",
+            additionalHourRate:
+              editing.additionalHourRate !== undefined ? String(editing.additionalHourRate) : "",
+            toleranceMinutes:
+              editing.toleranceMinutes !== undefined ? String(editing.toleranceMinutes) : "",
+          }
+        : {
+            description: "",
+            firstHourRate: "",
+            additionalHourRate: "",
+            toleranceMinutes: "",
+          },
+    );
+  }, [dialogOpen, editing, form]);
+
+  const formSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  const isSubmitting = formSubmitting || createMutation.isPending || updateMutation.isPending;
+
+  function openCreate() {
+    setEditing(null);
+    form.reset({
+      description: "",
+      firstHourRate: "",
+      additionalHourRate: "",
+      toleranceMinutes: "",
+    });
+    setFormError(null);
+    setDialogOpen(true);
+  }
+
+  function openEdit(tariff: TariffResponseDTO) {
+    setEditing(tariff);
+    form.reset({
+      description: tariff.description ?? "",
+      firstHourRate: tariff.firstHourRate !== undefined ? String(tariff.firstHourRate) : "",
+      additionalHourRate:
+        tariff.additionalHourRate !== undefined ? String(tariff.additionalHourRate) : "",
+      toleranceMinutes:
+        tariff.toleranceMinutes !== undefined ? String(tariff.toleranceMinutes) : "",
+    });
+    setFormError(null);
+    setDialogOpen(true);
+  }
+
+  async function invalidate(tariffId?: number) {
+    await queryClient.invalidateQueries({ queryKey: getListTariffsQueryKey() });
+    if (tariffId !== undefined) {
+      await queryClient.invalidateQueries({ queryKey: getGetTariffQueryKey(tariffId) });
+    }
+  }
+
+  async function handleDeactivate() {
+    if (!deleteTarget?.id) {
+      return;
+    }
+    try {
+      await deleteMutation.mutateAsync({ id: deleteTarget.id });
+      toast.success("Tarifa desativada.");
+      setDeleteTarget(null);
+      if ((pageData?.content?.length ?? 0) === 1 && page > 0) {
+        setPage((current) => current - 1);
+      }
+      await invalidate(deleteTarget.id);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  }
+
+  const columns: DataTableColumn<TariffResponseDTO>[] = [
+    {
+      id: "description",
+      header: "Descrição",
+      sortField: "description",
+      cell: (tariff) => (
+        <div className="flex items-center gap-3">
+          <MediaThumb icon={ReceiptTextIcon} size="sm" />
+          <span className="font-medium">{tariff.description ?? "—"}</span>
+        </div>
+      ),
+    },
+    {
+      id: "firstHourRate",
+      header: "Primeira hora",
+      sortField: "firstHourRate",
+      headerClassName: "text-right",
+      className: "text-right",
+      cell: (tariff) => (
+        <span className="tabular-nums">{formatCurrency(tariff.firstHourRate)}</span>
+      ),
+    },
+    {
+      id: "additionalHourRate",
+      header: "Hora adicional",
+      sortField: "additionalHourRate",
+      headerClassName: "text-right",
+      className: "text-right",
+      cell: (tariff) => (
+        <span className="tabular-nums">{formatCurrency(tariff.additionalHourRate)}</span>
+      ),
+    },
+    {
+      id: "toleranceMinutes",
+      header: "Tolerância",
+      sortField: "toleranceMinutes",
+      headerClassName: "text-right",
+      className: "text-right",
+      cell: (tariff) => <span className="tabular-nums">{tariff.toleranceMinutes ?? 0} min</span>,
+    },
+    {
+      id: "createdAt",
+      header: "Cadastrada em",
+      sortField: "createdAt",
+      cell: (tariff) => (
+        <span className="text-muted-foreground">{formatDateTime(tariff.createdAt)}</span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Ações",
+      headerClassName: "text-right",
+      cell: (tariff) => (
+        <TableActions onEdit={() => openEdit(tariff)} onDelete={() => setDeleteTarget(tariff)} />
+      ),
+    },
+  ];
+
   return (
-    <PlaceholderPage
-      title="Tarifas"
-      description="Valores de primeira hora, hora adicional e tolerância, com calculadora estimada."
-      icon={<HugeiconsIcon icon={ReceiptTextIcon} strokeWidth={2} />}
-    />
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title="Tarifas"
+        description="Valores de primeira hora, hora adicional e tolerância."
+        actions={
+          <Button onClick={openCreate}>
+            <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
+            Nova tarifa
+          </Button>
+        }
+      />
+
+      <section className="rounded-2xl bg-secondary p-2">
+        <DataTable
+          columns={columns}
+          rows={pageData?.content ?? []}
+          getRowId={(tariff) => tariff.id ?? tariff.description ?? "unknown"}
+          isLoading={query.isPending}
+          error={query.error}
+          onRetry={() => void query.refetch()}
+          sort={sort}
+          onSortChange={(nextSort) => {
+            setSort(nextSort);
+            setPage(0);
+          }}
+          mobileRow={(tariff) => (
+            <div className="flex gap-4 px-2 py-6">
+              <MediaThumb icon={ReceiptTextIcon} />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="truncate text-base leading-6 font-medium">
+                    {tariff.description ?? "—"}
+                  </h3>
+                  <RowActionsMenu
+                    label="Opções da tarifa"
+                    items={[
+                      {
+                        label: "Editar",
+                        icon: PencilEdit02Icon,
+                        onSelect: () => openEdit(tariff),
+                      },
+                      {
+                        label: "Desativar",
+                        icon: Delete02Icon,
+                        destructive: true,
+                        onSelect: () => setDeleteTarget(tariff),
+                      },
+                    ]}
+                  />
+                </div>
+                <p className="text-[13px] leading-[18px] text-muted-foreground tabular-nums">
+                  1ª hora · +{formatCurrency(tariff.additionalHourRate)}/h
+                </p>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <span title={`Tolerância de ${tariff.toleranceMinutes ?? 0} minutos`}>
+                    <StatusBadge tone="neutral">{tariff.toleranceMinutes ?? 0} min</StatusBadge>
+                  </span>
+                  <span className="shrink-0 text-base leading-6 font-medium tabular-nums">
+                    {formatCurrency(tariff.firstHourRate)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          emptyIcon={<HugeiconsIcon icon={ReceiptTextIcon} strokeWidth={2} className="size-5" />}
+          emptyTitle="Nenhuma tarifa cadastrada"
+          emptyDescription="Cadastre a primeira tarifa para permitir a abertura de tickets."
+          footer={
+            <Pagination
+              page={page}
+              pageSize={PAGE_SIZE}
+              totalElements={pageData?.totalElements ?? 0}
+              totalPages={pageData?.totalPages ?? 0}
+              onPageChange={setPage}
+              isFetching={query.isFetching}
+            />
+          }
+        />
+      </section>
+
+      <FormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editing ? "Editar tarifa" : "Nova tarifa"}
+        description="Os valores são usados no cálculo manual de pagamentos."
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void form.handleSubmit();
+        }}
+        submitLabel={editing ? "Salvar" : "Cadastrar"}
+        isSubmitting={isSubmitting}
+      >
+        <FormError message={formError} />
+        <form.Field name="description">
+          {(field) => (
+            <FormTextField
+              field={field}
+              id="tariff-description"
+              label="Descrição"
+              placeholder="Ex.: Tarifa padrão"
+              maxLength={255}
+            />
+          )}
+        </form.Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <form.Field name="firstHourRate">
+            {(field) => (
+              <FormTextField
+                field={field}
+                id="tariff-first-hour"
+                label="Primeira hora (R$)"
+                type="number"
+                placeholder="0,00"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+              />
+            )}
+          </form.Field>
+          <form.Field name="additionalHourRate">
+            {(field) => (
+              <FormTextField
+                field={field}
+                id="tariff-additional-hour"
+                label="Hora adicional (R$)"
+                type="number"
+                placeholder="0,00"
+                inputMode="decimal"
+                min={0}
+                step="0.01"
+              />
+            )}
+          </form.Field>
+        </div>
+        <form.Field name="toleranceMinutes">
+          {(field) => (
+            <FormTextField
+              field={field}
+              id="tariff-tolerance"
+              label="Tolerância (minutos)"
+              type="number"
+              placeholder="Ex.: 15"
+              inputMode="numeric"
+              min={0}
+              step="1"
+              description="Minutos de tolerância antes de cobrar a primeira hora."
+            />
+          )}
+        </form.Field>
+      </FormDialog>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        title="Desativar tarifa"
+        description={`A tarifa ${deleteTarget?.description ?? ""} deixará de aparecer nas listas. Tickets existentes não são alterados. Esta ação não pode ser desfeita.`}
+        confirmLabel="Desativar"
+        destructive
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDeactivate}
+      />
+    </div>
   );
 }
