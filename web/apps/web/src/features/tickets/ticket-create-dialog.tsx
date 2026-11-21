@@ -133,6 +133,7 @@ export function TicketCreateDialog({ open, onOpenChange, onCreated }: TicketCrea
             id="session-vehicle"
             label="Veículo"
             options={vehicleOptions}
+            loading={vehicles.query.isPending}
             placeholder={
               vehicles.query.isPending ? "Carregando veículos..." : "Selecione o veículo"
             }
@@ -151,6 +152,7 @@ export function TicketCreateDialog({ open, onOpenChange, onCreated }: TicketCrea
             id="session-space"
             label="Vaga"
             options={spaceOptions}
+            loading={availableSpaces.query.isPending}
             placeholder={
               availableSpaces.query.isPending ? "Carregando vagas..." : "Selecione a vaga"
             }

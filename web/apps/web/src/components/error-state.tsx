@@ -17,7 +17,7 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-danger/30 bg-danger-bg/50 px-6 py-12 text-center"
+      className="flex flex-col items-center justify-center gap-3 rounded-xl border border-danger/30 bg-danger-bg/50 px-6 py-12 text-center"
     >
       <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-6 text-destructive" />
       <div className="space-y-1">

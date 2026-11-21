@@ -11,7 +11,7 @@ interface SectionHeaderProps {
 /** Section title with an optional trailing link/action ("Ver todos"). */
 export function SectionHeader({ title, description, action, className }: SectionHeaderProps) {
   return (
-    <div className={cn("flex items-center justify-between gap-3 px-2 sm:px-0", className)}>
+    <div className={cn("flex items-center justify-between gap-3", className)}>
       <div className="min-w-0 space-y-1">
         <h2 className="text-[17px] leading-6 font-semibold sm:text-xl sm:leading-7">{title}</h2>
         {description ? (

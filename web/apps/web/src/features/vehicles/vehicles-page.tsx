@@ -1,5 +1,5 @@
 import { Button } from "@web/ui/components/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { Add01Icon, Car01Icon, Delete02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
@@ -40,7 +40,7 @@ export function VehiclesPage() {
 
   const query = useListVehicles(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
-    { query: { meta: { skipGlobalErrorToast: true } } },
+    { query: { placeholderData: keepPreviousData, meta: { skipGlobalErrorToast: true } } },
   );
   const pageData = query.data?.data;
 
@@ -145,7 +145,7 @@ export function VehiclesPage() {
         }
       />
 
-      <section className="rounded-2xl bg-secondary p-2">
+      <section>
         <DataTable
           columns={columns}
           rows={pageData?.content ?? []}

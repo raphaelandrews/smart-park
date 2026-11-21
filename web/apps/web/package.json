@@ -8,7 +8,7 @@
     "serve": "vite preview",
     "start": "vite",
     "check-types": "vite build && tsc --noEmit",
-    "dev:bare": "vite dev",
+    "dev:bare": "VITE_API_URL=/api vite dev",
     "gen:api": "curl -fsS http://localhost:8080/v3/api-docs -o openapi.json && orval",
     "test": "bun test",
     "env:generate": "varlock codegen"

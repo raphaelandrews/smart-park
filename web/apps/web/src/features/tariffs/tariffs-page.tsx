@@ -1,5 +1,5 @@
 import { Button } from "@web/ui/components/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import {
   Add01Icon,
   Delete02Icon,
@@ -48,7 +48,7 @@ export function TariffsPage() {
 
   const query = useListTariffs(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
-    { query: { meta: { skipGlobalErrorToast: true } } },
+    { query: { placeholderData: keepPreviousData, meta: { skipGlobalErrorToast: true } } },
   );
   const pageData = query.data?.data;
 
@@ -104,7 +104,7 @@ export function TariffsPage() {
     },
     {
       id: "vehicleType",
-      header: "Tipo de veículo",
+      header: "Tipo",
       sortField: "vehicleType",
       cell: (tariff) => (tariff.vehicleType ? getVehicleTypeLabel(tariff.vehicleType) : "Padrão"),
     },
@@ -167,7 +167,7 @@ export function TariffsPage() {
         }
       />
 
-      <section className="rounded-2xl bg-secondary p-2">
+      <section>
         <DataTable
           columns={columns}
           rows={pageData?.content ?? []}
@@ -208,13 +208,15 @@ export function TariffsPage() {
                 <p className="text-[13px] leading-[18px] text-muted-foreground tabular-nums">
                   1ª hora · +{formatCurrency(tariff.additionalHourRate)}/h
                 </p>
-                <div className="mt-3 flex items-end justify-between gap-3">
-                  <span className="flex items-center gap-1.5">
-                    <StatusBadge tone="info">
+                <div className="mt-3 flex items-end justify-between gap-2">
+                  <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <StatusBadge tone="info" className="h-5 px-2 text-[11px]">
                       {tariff.vehicleType ? getVehicleTypeLabel(tariff.vehicleType) : "Padrão"}
                     </StatusBadge>
                     <span title={`Tolerância de ${tariff.toleranceMinutes ?? 0} minutos`}>
-                      <StatusBadge tone="neutral">{tariff.toleranceMinutes ?? 0} min</StatusBadge>
+                      <StatusBadge tone="neutral" className="h-5 px-2 text-[11px]">
+                        {tariff.toleranceMinutes ?? 0} min
+                      </StatusBadge>
                     </span>
                   </span>
                   <span className="shrink-0 text-base leading-6 font-medium tabular-nums">

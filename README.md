@@ -37,3 +37,19 @@ cd api
 ./mvnw spring-boot:run
 ```
 
+## Troubleshooting
+
+- **Port 8080 in use**
+
+  ```bash
+  ss -ltnp 'sport = :8080'
+  ```
+
+  ```bash
+  kill <pid>
+  ```
+
+  Or
+
+  ```bash
+  kill "$(ss -ltnpH 'sport = :8080' | grep -oP 'pid=\K[0-9]+')"

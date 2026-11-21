@@ -129,7 +129,7 @@ export function SectionEmpty({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-6 py-10 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border px-6 py-10 text-center">
       <span className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
         {icon}
       </span>

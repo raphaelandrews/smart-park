@@ -15,6 +15,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const { login, loginWithGoogle } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [slow, setSlow] = useState(false);
   const submittingRef = useRef(false);
 
   const finish = useCallback(
@@ -38,17 +39,22 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
     },
     onSubmit: async ({ value, formApi }) => {
       setError(null);
+      setSlow(false);
       const parsed = loginSchema.safeParse(value);
       if (!parsed.success) {
         return;
       }
 
+      const slowTimer = window.setTimeout(() => setSlow(true), 5000);
       try {
         const response = await login(parsed.data);
         finish(response.user?.role);
       } catch (loginError) {
         applyServerFieldErrors(formApi, loginError);
         setError(getErrorMessage(loginError));
+      } finally {
+        window.clearTimeout(slowTimer);
+        setSlow(false);
       }
     },
   });
@@ -84,7 +90,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   }, []);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid w-full max-w-[400px] gap-5">
       {error ? (
         <div
           role="alert"
@@ -133,12 +139,17 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           )}
         </form.Field>
 
-        <Button type="submit" size="lg" className="mt-1 w-full" disabled={isSubmitting}>
-          {isSubmitting ? (
+        <Button type="submit" size="lg" className="mt-1 w-full rounded-[6px]" disabled={isSubmitting}>
+          {formSubmitting ? (
             <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="size-4 animate-spin" />
           ) : null}
-          Entrar
+          {formSubmitting ? "Entrando..." : "Entrar"}
         </Button>
+        {slow && formSubmitting ? (
+          <p role="status" className="text-center text-xs text-muted-foreground">
+            Conectando ao servidor... isso pode levar alguns segundos.
+          </p>
+        ) : null}
       </form>
 
       {isGoogleConfigured ? (

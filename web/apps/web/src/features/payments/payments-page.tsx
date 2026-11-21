@@ -1,3 +1,4 @@
+import { keepPreviousData } from "@tanstack/react-query";
 import { Button } from "@web/ui/components/button";
 import { Add01Icon, CreditCardIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -30,7 +31,7 @@ export function PaymentsPage() {
 
   const query = useListPayments(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
-    { query: { meta: { skipGlobalErrorToast: true } } },
+    { query: { placeholderData: keepPreviousData, meta: { skipGlobalErrorToast: true } } },
   );
   const pageData = query.data?.data;
 
@@ -85,7 +86,7 @@ export function PaymentsPage() {
     {
       id: "ticketId",
       header: "Ticket",
-      sortField: "ticketId",
+      sortField: "ticket.id",
       cell: (payment) => {
         const ticket = payment.ticketId !== undefined ? ticketMap.get(payment.ticketId) : undefined;
         return (
@@ -142,7 +143,7 @@ export function PaymentsPage() {
         }
       />
 
-      <section className="rounded-2xl bg-secondary p-2">
+      <section>
         <DataTable
           columns={columns}
           rows={pageData?.content ?? []}
@@ -188,7 +189,7 @@ export function PaymentsPage() {
           }}
           emptyIcon={<HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} className="size-5" />}
           emptyTitle="Nenhum pagamento registrado"
-          emptyDescription="Registre o primeiro pagamento de um ticket encerrado."
+          emptyDescription="Registre o pagamento de uma sessão para encerrá-la."
           footer={
             <Pagination
               page={page}
@@ -206,6 +207,7 @@ export function PaymentsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         tickets={unpaidTickets}
+        loading={tickets.query.isPending || allPayments.query.isPending}
         onPaid={() => setPage(0)}
       />
     </div>

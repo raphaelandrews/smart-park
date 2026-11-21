@@ -27,6 +27,7 @@ interface PaymentDialogProps {
   tickets: TicketResponseDTO[];
   initialTicketId?: string;
   onPaid?: () => void;
+  loading?: boolean;
 }
 
 export function PaymentDialog({
@@ -35,6 +36,7 @@ export function PaymentDialog({
   tickets,
   initialTicketId,
   onPaid,
+  loading = false,
 }: PaymentDialogProps) {
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
@@ -151,11 +153,18 @@ export function PaymentDialog({
             label="Sessão"
             options={options}
             placeholder="Selecione a sessão"
-            description="O pagamento encerra a sessão e libera a vaga."
+            loading={loading}
+            description={
+              options.length === 0 && !loading
+                ? "Nenhuma sessão pendente de pagamento."
+                : undefined
+            }
           />
         )}
       </form.Field>
-      <PaymentQuote quote={quote} isLoading={quoteQuery.isFetching} error={quoteQuery.error} />
+      {options.length === 0 && !loading ? null : (
+        <PaymentQuote quote={quote} isLoading={quoteQuery.isFetching} error={quoteQuery.error} />
+      )}
       {selectedTicket ? (
         <dl className="grid gap-1 rounded-xl bg-secondary px-3 py-2.5 text-sm">
           <div className="flex justify-between gap-3">

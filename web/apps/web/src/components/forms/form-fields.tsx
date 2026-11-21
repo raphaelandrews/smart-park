@@ -168,6 +168,7 @@ export function SelectField({
   description,
   placeholder = "Selecione",
   disabled,
+  loading,
 }: {
   id: string;
   name?: string;
@@ -180,24 +181,35 @@ export function SelectField({
   description?: string;
   placeholder?: string;
   disabled?: boolean;
+  loading?: boolean;
 }) {
+  const isEmpty = options.length === 0;
+  const showEmpty = isEmpty && !loading;
+  const isDisabled = disabled || isEmpty;
+
   return (
-    <FieldShell id={id} label={label} error={error} description={description}>
+    <FieldShell
+      id={id}
+      label={label}
+      error={error}
+      description={description ?? (showEmpty ? "Nenhuma opção disponível no momento." : undefined)}
+    >
       <Select
         name={name}
         items={options}
         value={value === "" ? null : value}
         onValueChange={(next) => onChange(next == null ? "" : String(next))}
-        disabled={disabled}
+        disabled={isDisabled}
       >
         <SelectTrigger
           id={id}
           onBlur={onBlur}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="h-10 w-full bg-background"
+          aria-disabled={isDisabled}
+          className="h-10 w-full bg-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
         >
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={showEmpty ? "Nenhuma opção disponível" : placeholder} />
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (

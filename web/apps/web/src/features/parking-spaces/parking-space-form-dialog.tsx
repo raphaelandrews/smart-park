@@ -189,6 +189,7 @@ export function ParkingSpaceFormDialog({
             id="space-type"
             label="Tipo de vaga"
             options={typeOptions}
+            loading={spaceTypes.query.isPending}
             placeholder={spaceTypes.query.isPending ? "Carregando tipos..." : "Selecione o tipo"}
           />
         )}

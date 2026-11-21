@@ -23,7 +23,7 @@ export interface DataTableColumn<T> {
   cell: (row: T) => ReactNode;
   className?: string;
   headerClassName?: string;
-  /** API field used by `sort=field,asc|desc`. Defaults to `id`. */
+  /** API field used by `sort=field,asc|desc`. Required for sortable columns. */
   sortField?: string;
   sortable?: boolean;
 }
@@ -109,7 +109,10 @@ export function DataTable<T>({
                 <TableRow className="border-border hover:bg-transparent">
                   {columns.map((column) => {
                     const field = column.sortField ?? column.id;
-                    const isSortable = Boolean(onSortChange) && column.sortable !== false;
+                    const isSortable =
+                      Boolean(onSortChange) &&
+                      Boolean(column.sortField) &&
+                      column.sortable !== false;
                     const isActive = sort?.field === field;
                     const direction = isActive ? sort?.direction : undefined;
                     const sortIcon =

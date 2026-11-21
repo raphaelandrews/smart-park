@@ -1,5 +1,5 @@
 import { Button } from "@web/ui/components/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { Add01Icon, Delete02Icon, PencilEdit02Icon, TagsIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
@@ -39,7 +39,7 @@ export function ParkingSpaceTypesPage() {
 
   const query = useListParkingSpaceTypes(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
-    { query: { meta: { skipGlobalErrorToast: true } } },
+    { query: { placeholderData: keepPreviousData, meta: { skipGlobalErrorToast: true } } },
   );
   const pageData = query.data?.data;
 
@@ -144,7 +144,7 @@ export function ParkingSpaceTypesPage() {
         }
       />
 
-      <section className="rounded-2xl bg-secondary p-2">
+      <section>
         <DataTable
           columns={columns}
           rows={pageData?.content ?? []}

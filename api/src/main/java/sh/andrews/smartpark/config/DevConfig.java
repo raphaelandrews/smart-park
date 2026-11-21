@@ -97,13 +97,24 @@ public class DevConfig implements CommandLineRunner {
 
   private ParkingSpaceType ensureParkingSpaceType(String name, String description,
       boolean requiresCredential) {
-    return parkingSpaceTypeRepository.findByName(name).orElseGet(() -> {
-      ParkingSpaceType type = new ParkingSpaceType();
-      type.setName(name);
-      type.setDescription(description);
-      type.setRequiresCredential(requiresCredential);
-      return parkingSpaceTypeRepository.save(type);
-    });
+    return parkingSpaceTypeRepository.findByName(name)
+        .map(existing -> {
+          boolean changed = !description.equals(existing.getDescription())
+              || !Boolean.valueOf(requiresCredential).equals(existing.getRequiresCredential());
+          if (!changed) {
+            return existing;
+          }
+          existing.setDescription(description);
+          existing.setRequiresCredential(requiresCredential);
+          return parkingSpaceTypeRepository.save(existing);
+        })
+        .orElseGet(() -> {
+          ParkingSpaceType type = new ParkingSpaceType();
+          type.setName(name);
+          type.setDescription(description);
+          type.setRequiresCredential(requiresCredential);
+          return parkingSpaceTypeRepository.save(type);
+        });
   }
 
   private void ensureParkingSpace(String code, ParkingSpaceType type) {

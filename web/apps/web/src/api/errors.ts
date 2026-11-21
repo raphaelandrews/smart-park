@@ -131,6 +131,14 @@ export function networkError(cause: unknown): ApiError {
   });
 }
 
+export function timeoutError(cause?: unknown): ApiError {
+  return new ApiError({
+    status: 0,
+    message: "O servidor demorou para responder. Verifique sua conexão e tente novamente.",
+    cause,
+  });
+}
+
 export function getErrorMessage(error: unknown): string {
   if (isApiError(error)) {
     return error.message;

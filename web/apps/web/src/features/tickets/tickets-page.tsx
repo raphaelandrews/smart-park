@@ -194,7 +194,7 @@ export function TicketsPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Tickets"
-        description="Acompanhe as sessões abertas e pagas do estacionamento."
+        description="Acompanhe as sessões abertas e encerradas do estacionamento."
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />
@@ -243,7 +243,7 @@ export function TicketsPage() {
         </p>
       ) : null}
 
-      <section className="rounded-2xl bg-secondary p-2">
+      <section>
         <DataTable
           columns={columns}
           rows={pageRows}

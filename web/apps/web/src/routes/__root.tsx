@@ -29,12 +29,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         content: "Gestão de vagas, veículos, tickets e pagamentos do Smart Park.",
       },
     ],
-    links: [
-      {
-        rel: "icon",
-        href: "/favicon.ico",
-      },
-    ],
   }),
 });
 

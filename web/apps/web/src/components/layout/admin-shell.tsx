@@ -7,7 +7,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@web/ui/components/breadcrumb";
-import { Button } from "@web/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,10 +35,9 @@ import {
 } from "@web/ui/components/sidebar";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  BellDotIcon,
   Car01Icon,
   CreditCardIcon,
-  LayoutDashboardIcon,
+  Home01Icon,
   Logout01Icon,
   ReceiptTextIcon,
   SquareParkingIcon,
@@ -55,7 +53,7 @@ import { useAuth } from "@/auth/auth-context";
 import { getInitials, getRoleLabel } from "@/lib/labels";
 
 const adminNavItems = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboardIcon },
+  { to: "/admin", label: "Visão geral", icon: Home01Icon },
   { to: "/admin/vehicles", label: "Veículos", icon: Car01Icon },
   { to: "/admin/parking-spaces", label: "Vagas", icon: SquareParkingIcon },
   { to: "/admin/parking-space-types", label: "Tipos de vaga", icon: TagsIcon },
@@ -65,7 +63,7 @@ const adminNavItems = [
 ] as const;
 
 const navGroups = [
-  { label: "Visão geral", items: adminNavItems.slice(0, 1) },
+  { label: "Principal", items: adminNavItems.slice(0, 1) },
   { label: "Gestão", items: adminNavItems.slice(1) },
 ];
 
@@ -99,7 +97,7 @@ function NavUser() {
               <SidebarMenuButton
                 size="lg"
                 tooltip="Conta"
-                className="data-open:bg-sidebar-accent"
+                className="rounded-[0.5rem] data-open:bg-sidebar-accent"
               />
             }
           >
@@ -163,8 +161,13 @@ function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Smart Park" render={<Link to="/admin" />}>
-              <div className="flex size-8 items-center justify-center rounded-lg bg-ink text-primary">
+            <SidebarMenuButton
+              size="lg"
+              tooltip="Smart Park"
+              render={<Link to="/admin" />}
+              className="rounded-[0.5rem]"
+            >
+              <div className="flex size-8 items-center justify-center rounded-[0.5rem] bg-ink text-primary">
                 <HugeiconsIcon icon={SquareParkingIcon} strokeWidth={2} className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -180,20 +183,22 @@ function AppSidebar() {
 
       <SidebarContent>
         {navGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+          <SidebarGroup key={group.label} className="gap-y-px">
+            <SidebarGroupLabel className="mt-4 mb-2 h-auto px-3 text-sm font-medium text-muted-foreground">
+              {group.label}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-y-px">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton
                       isActive={isActivePath(pathname, item.to)}
                       tooltip={item.label}
                       render={<Link to={item.to} />}
-                      className="data-active:border data-active:border-primary-200 data-active:bg-primary-50 data-active:text-primary-900"
+                      className="min-h-[34px] gap-2.5 rounded-[0.5rem] px-3 py-0 font-medium [&_svg]:opacity-50"
                     >
-                      <HugeiconsIcon icon={item.icon} strokeWidth={2} />
-                      <span>{item.label}</span>
+                      <HugeiconsIcon icon={item.icon} strokeWidth={2} className="size-4" />
+                      <span className="truncate">{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -220,7 +225,7 @@ export function AdminShell() {
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="-ml-1" />
@@ -241,19 +246,9 @@ export function AdminShell() {
             </Breadcrumb>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="relative size-11 rounded-full bg-card shadow-floating sm:size-10"
-            aria-label="Notificações"
-          >
-            <HugeiconsIcon icon={BellDotIcon} strokeWidth={2} className="size-5" />
-            <span className="absolute top-2.5 right-2.5 size-1.5 rounded-full bg-danger" />
-          </Button>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 px-6 pt-6 md:p-6 md:pt-6 lg:p-8">
+        <div className="mx-auto flex w-full min-w-0 max-w-[1440px] flex-1 flex-col gap-8 px-6 pt-6 md:p-6 md:pt-6 lg:p-8">
           <Outlet />
         </div>
       </SidebarInset>

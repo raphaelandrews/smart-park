@@ -1,6 +1,6 @@
 import { clearAccessToken, getAccessToken, notifyUnauthorized } from "@/auth/token";
 
-import { networkError, normalizeApiError } from "./errors";
+import { networkError, normalizeApiError, timeoutError } from "./errors";
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "/api";
 
@@ -31,8 +31,15 @@ export async function customFetch<T>(url: string, options: RequestInit = {}): Pr
 
   let response: Response;
   try {
-    response = await fetch(`${baseUrl}${url}`, { ...options, headers });
+    response = await fetch(`${baseUrl}${url}`, {
+      ...options,
+      headers,
+      signal: options.signal ?? AbortSignal.timeout(45_000),
+    });
   } catch (cause) {
+    if (cause instanceof DOMException && (cause.name === "TimeoutError" || cause.name === "AbortError")) {
+      throw timeoutError(cause);
+    }
     throw networkError(cause);
   }
 

@@ -151,12 +151,7 @@ export function DriverPage() {
               </Button>
               <StatusBadge tone={isAdmin ? "brand" : "info"}>{roleLabel}</StatusBadge>
               {isAdmin ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  nativeButton={false}
-                  render={<Link to="/admin" />}
-                >
+                <Button variant="outline" nativeButton={false} render={<Link to="/admin" />}>
                   Painel administrativo
                 </Button>
               ) : null}
@@ -199,7 +194,7 @@ export function DriverPage() {
             action={
               <Button
                 variant="outline"
-                className="h-11 rounded-full bg-card px-5 text-[15px] font-medium shadow-floating"
+                className="hidden h-11 rounded-full bg-card px-5 text-[15px] font-medium shadow-floating md:inline-flex"
                 onClick={() => openPayment(pendingTickets[0])}
               >
                 Pagar
@@ -214,7 +209,7 @@ export function DriverPage() {
             action={
               <Button
                 variant="outline"
-                className="h-11 rounded-full bg-card px-5 text-[15px] font-medium shadow-floating"
+                className="hidden h-11 rounded-full bg-card px-5 text-[15px] font-medium shadow-floating md:inline-flex"
                 onClick={openSession}
               >
                 Abrir ticket
@@ -311,6 +306,7 @@ export function DriverPage() {
         open={paymentOpen}
         onOpenChange={setPaymentOpen}
         tickets={unpaidTickets}
+        loading={tickets.query.isPending || payments.query.isPending}
         initialTicketId={paymentInitialTicketId}
       />
 

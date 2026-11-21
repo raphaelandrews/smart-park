@@ -35,8 +35,11 @@ export function Pagination({
   return (
     <div className="flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
       <p>
-        Mostrando {formatNumber(firstItem)}–{formatNumber(lastItem)} de{" "}
-        {formatNumber(totalElements)}
+        {totalElements === 0
+          ? "Nenhum registro"
+          : `Mostrando ${formatNumber(firstItem)}–${formatNumber(lastItem)} de ${formatNumber(
+              totalElements,
+            )}`}
       </p>
 
       <div className="flex items-center gap-3">

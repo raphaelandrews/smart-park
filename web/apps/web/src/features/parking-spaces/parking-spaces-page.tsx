@@ -1,5 +1,5 @@
 import { Button } from "@web/ui/components/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import {
   Add01Icon,
   Delete02Icon,
@@ -58,7 +58,7 @@ export function ParkingSpacesPage() {
 
   const query = useListParkingSpaces(
     { page, size: PAGE_SIZE, sort: toSortParam(sort) },
-    { query: { meta: { skipGlobalErrorToast: true } } },
+    { query: { placeholderData: keepPreviousData, meta: { skipGlobalErrorToast: true } } },
   );
   const pageData = query.data?.data;
 
@@ -129,6 +129,7 @@ export function ParkingSpacesPage() {
     {
       id: "status",
       header: "Status",
+      sortable: false,
       cell: (space) => {
         const status = getSpaceStatus(space, openTickets);
         return (
@@ -177,7 +178,7 @@ export function ParkingSpacesPage() {
         }
       />
 
-      <section className="rounded-2xl bg-secondary p-2">
+      <section>
         <DataTable
           columns={columns}
           rows={pageData?.content ?? []}

@@ -101,13 +101,13 @@ export function DashboardPage() {
     {
       label: "Tickets",
       value: formatNumber(openTickets.length),
-      hint: "ativas",
+      hint: "ativos",
       icon: Ticket01Icon,
     },
     {
       label: "Receita hoje",
       value: formatCurrency(revenueToday),
-      hint: "recebidos",
+      hint: "recebida",
       icon: CreditCardIcon,
     },
   ] as const;
@@ -200,7 +200,7 @@ export function DashboardPage() {
         }
       />
 
-      <section className="rounded-2xl bg-secondary p-2">
+      <section>
         <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
           {stats.map((stat) => (
             <Card key={stat.label} size="sm">
